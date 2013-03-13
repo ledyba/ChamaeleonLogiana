@@ -16,12 +16,21 @@ extern void* DYNAPI findLogiana()
 {
 	try {
 		std::unique_ptr<Device> dev = host().find();
-		if(dev && !dev->isLogicAnalyzer()) {
-			dev->download();
-			sleep(2);
-			dev.reset();
+		while(!dev){
+			std::printf("Device searching...\n");
+			sleep(1);
 			host().refresh();
 			dev = host().find();
+		}
+
+		if(dev && !dev->isLogicAnalyzer()) {
+			dev->download();
+			dev.reset();
+			while (!dev) {
+				sleep(1);
+				host().refresh();
+				dev = host().find();
+			}
 		}
 		if(!dev) {
 			std::fprintf(stderr, "EzUSB device is not found.\n");
@@ -32,6 +41,7 @@ extern void* DYNAPI findLogiana()
 		} else {
 			std::printf("load device: %p\n", dev.get());
 		}
+
 		dev->bootLogicAnalyzer();
 		return dev.release();
 	}catch(std::exception& e) {
