@@ -1,15 +1,15 @@
-/*
- * Session.cpp
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
 
 #include "Session.h"
 
 namespace logiana {
 
-Session::Session( Clock const& clock, TriggerType const& type, TriggerCond const& cond, TriggerLine const& line )
+Session::Session( Frequency const& clock, MeasureType const& type, Condition const& cond, TriggerLine const& line )
 :clock_(clock)
 ,triggerType_(type)
 ,triggerCond_(cond)

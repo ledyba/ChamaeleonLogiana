@@ -1,0 +1,7 @@
+; Linker scripts for Windows
+EXPORTS
+	findLogiana
+	nowLogianaMeasuring
+	startMeasuring
+	closeLogiana
+	endMeasuring

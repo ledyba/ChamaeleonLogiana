@@ -1,8 +1,8 @@
-/*
- * Device.h
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
 
 #pragma once
@@ -24,9 +24,9 @@ public:
 public:
 	bool isLogicAnalyzer() const;
 	void download();
-	void initAsLogicAnalyzer();
+	void bootLogicAnalyzer();
 public:
-	void startProbe(Session const& session);
+	void startMeasuring(Session const& session);
 	bool isMeasuring();
 	std::vector<char> endProbe();
 private:
@@ -39,7 +39,6 @@ private:
 	template <std::size_t N> inline void controlWrite( char (&buf)[N] ) { controlWrite(buf, N); };
 	void bulkRead(char* buf, std::size_t buflen);
 	template <std::size_t N> inline void bulkRead( char (&buf)[N] ) { bulkRead(buf, N); };
-private:
 	void setRegister(bool isSecond, unsigned char val);
 };
 

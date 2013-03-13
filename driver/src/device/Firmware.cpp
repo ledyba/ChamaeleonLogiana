@@ -1,10 +1,10 @@
-/*
- * fw.cpp
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 10, 2013
- *      Author: psi
+ * original: optimize (http://optimize.ath.cx)
  */
-
+ 
 #include "Firmware.h"
 
 namespace logiana {

@@ -1,8 +1,8 @@
-/*
- * EzUSB.h
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * original: optimize (http://optimize.ath.cx)
  */
 
 #pragma once

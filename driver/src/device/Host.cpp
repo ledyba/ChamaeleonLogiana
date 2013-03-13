@@ -1,10 +1,10 @@
-/*
- * Host.cpp
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
-
+ 
 #include <usb.h>
 #include <string>
 #include <stdexcept>
@@ -13,6 +13,11 @@
 #include "Device.h"
 
 namespace logiana {
+
+Host& host() {
+	static Host host;
+	return host;
+}
 
 Host::Host() {
 	usb_init();

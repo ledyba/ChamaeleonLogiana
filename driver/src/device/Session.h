@@ -1,8 +1,8 @@
-/*
- * Session.h
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
 
 #pragma once
@@ -13,12 +13,12 @@ namespace logiana {
 
 class Session {
 private:
-	Clock const& clock_;
-	TriggerType triggerType_;
-	TriggerCond triggerCond_;
+	Frequency const& clock_;
+	MeasureType triggerType_;
+	Condition triggerCond_;
 	TriggerLine triggerLine_;
 public:
-	Session( Clock const& clock, TriggerType const& type, TriggerCond const& cond, TriggerLine const& line );
+	Session( Frequency const& clock, MeasureType const& type, Condition const& cond, TriggerLine const& line );
 	~Session();
 public:
 	unsigned char clockCode() const;

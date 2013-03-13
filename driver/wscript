@@ -26,30 +26,42 @@ def enum(dirname, exclude=[], exts=['.cpp','.c']):
 				f.append(os.path.relpath(fabs))
 	return f
 
-DRIVER_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src')
-DRIVER_SRC=enum('src')
+DRIVER_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'device')
+DRIVER_SRC=enum('src/device')
+
+MAIN_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'main')
+MAIN_SRC=enum('src/main')
+
+DYNAMIC_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'dynamic')
+DYNAMIC_SRC=enum('src/dynamic')
 
 def options(opt):
+	opt.add_option('--release', action='store_true', default=False, help='release build')
 	opt.load('compiler_c compiler_cxx')
 
 def configure(conf):
 	conf.load('compiler_c compiler_cxx')
-	conf.env.append_value('CXXFLAGS', ['-ggdb','-O0', '-Wall', '-std=gnu++11', '-D__GXX_EXPERIMENTAL_CXX0X__=1','-DDEBUG'])
-	conf.check(features='cxx cxxprogram', lib=['usb'], cflags=['-Wall'], defines=['TEST=TEST'], uselib_store='LIBUSB')
+	conf.env.append_value('LINKFLAGS', ['-fvisibility=hidden'])
+	if conf.options.release:
+		conf.env.append_value('CXXFLAGS', ['-O3', '-Wall', '-std=gnu++11', '-D__GXX_EXPERIMENTAL_CXX0X__=1'])
+	else:
+		conf.env.append_value('CXXFLAGS', ['-ggdb','-O0', '-Wall', '-std=gnu++11', '-D__GXX_EXPERIMENTAL_CXX0X__=1','-DDEBUG'])
+
 	conf.check(features='cxx cxxprogram', header_name='usb.h', mandatory=True, uselib_store='LIBUSB')
-
-DYNAMIC_SRC=\
-		DRIVER_SRC
-
-MAIN_SRC=\
-		DRIVER_SRC
 
 def build(bld):
 	bld(
 		features = 'cxx cprogram',
-		source = MAIN_SRC,
+		source = MAIN_SRC+DRIVER_SRC,
 		target = 'logiana',
 		use=['LIBUSB'])
+	bld(
+		features = 'cxx cxxshlib',
+		source = DYNAMIC_SRC+DRIVER_SRC,
+		target = 'Logiana',
+		use=['LIBUSB'],
+		defs = 'src/dynamic/dynamic.def'
+		)
 
 
 def shutdown(ctx):

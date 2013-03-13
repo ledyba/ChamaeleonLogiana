@@ -1,0 +1,14 @@
+#!/bin/sh
+# coding: utf-8
+#
+# Logiana
+#
+# Copyright 2013, PSI
+#
+
+if [ -z $PYTHON ];then
+	PYTHON='python'
+fi
+
+${PYTHON} ./waf distclean
+${PYTHON} ./waf configure $*

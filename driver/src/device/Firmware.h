@@ -1,10 +1,10 @@
-/*
- * fw.h
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 10, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
-
+ 
 #pragma once
 
 namespace logiana {

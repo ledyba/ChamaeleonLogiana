@@ -1,36 +1,27 @@
-//============================================================================
-// Name        : logiana.cpp
-// Author      : 
-// Version     :
-// Copyright   : Your copyright notice
-// Description : Hello World in C++, Ansi-style
-//============================================================================
-
-#include "Host.h"
-#include "Device.h"
-#include <unistd.h>
+/* coding: utf-8 */
+/**
+ * Logiana
+ *
+ * Copyright 2013, PSI
+ */
+ 
 #include <iostream>
 #include <cstdio>
-
-#ifdef __WIN32__
-
-#include <windows.h>
-#define sleep(n) Sleep(1000 * n)
-
-#endif
+#include "../device/Host.h"
+#include "../device/Device.h"
+#include "../device/Util.h"
 
 using namespace logiana;
 
 int main() {
-	Host host;
 
-	std::unique_ptr<Device> dev = host.find();
+	std::unique_ptr<Device> dev = host().find();
 	if(dev && !dev->isLogicAnalyzer()) {
 		dev->download();
 		sleep(2);
 		dev.reset();
-		host.refresh();
-		dev = host.find();
+		host().refresh();
+		dev = host().find();
 	}
 	if(!dev) {
 		std::fprintf(stderr, "EzUSB device is not found.\n");
@@ -41,10 +32,10 @@ int main() {
 	} else {
 		std::printf("load device: %p\n", dev.get());
 	}
-	dev->initAsLogicAnalyzer();
+	dev->bootLogicAnalyzer();
 	std::printf("Starting...");
 	std::fflush(stdout);
-	dev->startProbe(Session(Clock::_100MHz, TriggerType::_Center, TriggerCond::_NegEdge, TriggerLine::_Probe00));
+	dev->startMeasuring(Session(Frequency::_100MHz, MeasureType::_Center, Condition::_NegEdge, TriggerLine::_Probe00));
 	std::printf(" ok\n");
 	std::fflush(stdout);
 	while( dev->isMeasuring() ) {

@@ -1,8 +1,8 @@
-/*
- * Host.h
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
 
 #pragma once
@@ -10,10 +10,15 @@
 
 namespace logiana {
 class Device;
+class Host;
+
+Host& host();
 
 class Host {
-public:
+	friend Host& host();
+private:
 	Host();
+public:
 	void refresh();
 	std::unique_ptr<Device> find();
 };

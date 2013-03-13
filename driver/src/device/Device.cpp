@@ -1,8 +1,8 @@
-/*
- * Device.cpp
+/* coding: utf-8 */
+/**
+ * Logiana
  *
- *  Created on: Mar 12, 2013
- *      Author: psi
+ * Copyright 2013, PSI
  */
 
 #include <usb.h>
@@ -68,7 +68,7 @@ bool Device::isLogicAnalyzer() const {
 	return getString(1, 27) == "LGFW" && getString(2, 27) == "V100";
 }
 
-void Device::initAsLogicAnalyzer()
+void Device::bootLogicAnalyzer()
 {
 	usb_reset(this->handle_);
 	usb_resetep(this->handle_, GPFW_CPIPE);
@@ -131,24 +131,17 @@ void Device::download() {
 			msg += usb_strerror();
 			throw std::runtime_error(msg);
 		}
-		if (!std::equal(data.begin(), data.end(), &Firmware[off])) {
-			std::size_t x = 0;
-			std::size_t i;
-			for (i = 0; i < data.size(); ++i) {
-				if (data[i] != Firmware[off + i]) {
-					x = i;
-					break;
-				}
+		for( std::size_t i = 0; i<data.size(); ++i ) {
+			if (data[i] != Firmware[off + i]) {
+				char buff[1024];
+				std::snprintf(buff, sizeof buff,
+						"Firmware is not the same at: $%04x, 0x%02x != %02x",
+						static_cast<unsigned short>((off + i) & 0xffff), data[i],
+						Firmware[off + i]);
+				throw std::runtime_error(buff);
 			}
-			char buff[1024];
-			std::snprintf(buff, sizeof buff,
-					"Firmware is not the same at: $%04x, 0x%02x != %02x",
-					static_cast<unsigned short>((off + x) & 0xffff), data[i],
-					Firmware[off + i]);
-			throw std::runtime_error(buff);
-		} else {
-			std::printf(".");
 		}
+		std::printf(".");
 	}
 	std::printf("done!\n");
 	this->start();
@@ -183,7 +176,7 @@ void Device::controlWrite(char* buf, std::size_t buflen) {
 void Device::bulkRead(char* buf, std::size_t buflen) {
 	std::size_t left = buflen;
 	while( left > 0 ) {
-		const int ret = usb_bulk_read(this->handle_, GPFW_RPIPE, buf, buflen, 5000);
+		const int ret = usb_bulk_read(this->handle_, GPFW_RPIPE, &buf[buflen-left], left, 5000);
 		if (ret < 0) {
 			std::string msg("Failed to write bulk: ");
 			msg += usb_strerror();
@@ -201,7 +194,7 @@ void Device::setRegister(bool isSecond, unsigned char val)
 	this->controlWrite(buf);
 }
 
-void Device::startProbe(Session const& session)
+void Device::startMeasuring(Session const& session)
 {
 	this->setRegister(false, ((session.clockCode() <<4) | (session.triggerTypeCode())));
 	this->setRegister(true,  ((session.triggerCondCode() <<6) | (session.triggerLineCode() << 2)));
