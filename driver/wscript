@@ -1,0 +1,56 @@
+# -*- coding: utf-8 -*-
+import sys
+import os
+
+APPNAME = 'logiana'
+VERSION = '1.0.0'
+
+srcdir = '.'
+blddir = 'build'
+
+def enum(dirname, exclude=[], exts=['.cpp','.c']):
+	dirname = os.path.join(*(dirname.split('/')))
+	f = []
+	for root,dirs,files in os.walk(dirname):
+		matched = False
+		for e in exclude:
+			if root.startswith(e):
+				matched = True
+				break
+		if matched:
+			continue
+		for fitem in files:
+			fabs = os.path.join(root, fitem)
+			_, ext = os.path.splitext(fabs)
+			if ext in exts:
+				f.append(os.path.relpath(fabs))
+	return f
+
+DRIVER_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src')
+DRIVER_SRC=enum('src')
+
+def options(opt):
+	opt.load('compiler_c compiler_cxx')
+
+def configure(conf):
+	conf.load('compiler_c compiler_cxx')
+	conf.env.append_value('CXXFLAGS', ['-ggdb','-O0', '-Wall', '-std=gnu++11', '-D__GXX_EXPERIMENTAL_CXX0X__=1','-DDEBUG'])
+	conf.check(features='cxx cxxprogram', lib=['usb'], cflags=['-Wall'], defines=['TEST=TEST'], uselib_store='LIBUSB')
+	conf.check(features='cxx cxxprogram', header_name='usb.h', mandatory=True, uselib_store='LIBUSB')
+
+DYNAMIC_SRC=\
+		DRIVER_SRC
+
+MAIN_SRC=\
+		DRIVER_SRC
+
+def build(bld):
+	bld(
+		features = 'cxx cprogram',
+		source = MAIN_SRC,
+		target = 'logiana',
+		use=['LIBUSB'])
+
+
+def shutdown(ctx):
+	pass

@@ -10,6 +10,7 @@
 #include <stdexcept>
 #include <iostream>
 #include <cstdlib>
+#include <cstdio>
 #include "Firmware.h"
 #include "Device.h"
 

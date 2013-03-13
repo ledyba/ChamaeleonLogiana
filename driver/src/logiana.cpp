@@ -10,6 +10,15 @@
 #include "Device.h"
 #include <unistd.h>
 #include <iostream>
+#include <cstdio>
+
+#ifdef __WIN32__
+
+#include <windows.h>
+#define sleep(n) Sleep(1000 * n)
+
+#endif
+
 using namespace logiana;
 
 int main() {
