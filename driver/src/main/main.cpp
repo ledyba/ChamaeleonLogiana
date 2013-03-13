@@ -16,12 +16,21 @@ using namespace logiana;
 int main() {
 	try {
 		std::unique_ptr<Device> dev = host().find();
+		while(!dev){
+			std::printf("Device searching...\n");
+			sleep(1);
+			host().refresh();
+			dev = host().find();
+		}
+
 		if(dev && !dev->isLogicAnalyzer()) {
 			dev->download();
 			dev.reset();
-			sleep(2);
-			host().refresh();
-			dev = host().find();
+			while (!dev) {
+				sleep(1);
+				host().refresh();
+				dev = host().find();
+			}
 		}
 		if(!dev) {
 			std::fprintf(stderr, "EzUSB device is not found.\n");

@@ -13,6 +13,7 @@
 #include <cstdio>
 #include "Firmware.h"
 #include "Device.h"
+#include "Util.h"
 
 namespace logiana {
 
@@ -41,10 +42,10 @@ Device::Device(struct usb_device* dev)
 Device::~Device() noexcept
 {
 	try {
+		usb_release_interface(this->handle_, this->dev_->config->interface->altsetting->bInterfaceNumber);
 		if (usb_close(this->handle_)) {
-			std::string msg("Failed to close device: ");
-			msg += usb_strerror();
-			std::cerr << msg << std::endl;
+			std::fprintf(stderr, "Failed to close device: %s\n", usb_strerror());
+			std::fflush(stderr);
 		}
 		this->handle_ = nullptr;
 	}catch(...){}
@@ -75,6 +76,12 @@ bool Device::isLogicAnalyzer() const {
 
 void Device::bootLogicAnalyzer()
 {
+#if IS_LINUX
+	usb_reset(this->handle_);
+	usb_resetep(this->handle_, GPFW_CPIPE);
+	usb_resetep(this->handle_, GPFW_RPIPE);
+	usb_resetep(this->handle_, GPFW_WPIPE);
+#endif
 	char buf[2];
 	buf[0]=GPFW_DIR | 0x07;
 	buf[1]=GPFW_SET | 0x00;
@@ -83,28 +90,33 @@ void Device::bootLogicAnalyzer()
 
 void Device::halt() {
 	char data = 1; //1 means "halt"
+	std::printf("halt: ");
+	std::fflush(stdout);
 	const int ret = usb_control_msg(this->handle_, 0x40, 0xA0, 0x7f92, 0, &data, 1, 5000);
 	if (ret != 1) {
 		std::string msg("Failed to halt: ");
 		msg += usb_strerror();
 		throw std::runtime_error(msg);
 	} else {
-		std::printf("halt: ok!\n");
+		std::printf("ok!\n");
 		std::fflush(stdout);
 	}
 }
 
 void Device::start() {
 	char data = 0; // 0 means "run"
+	std::printf("start up: ");
+	std::fflush(stdout);
 	const int ret = usb_control_msg(this->handle_, 0x40, 0xA0, 0x7f92, 0, &data, 1, 5000);
 	if (ret != 1) {
+#if IS_LINUX
 		std::string msg("Failed to start: ");
 		msg += usb_strerror();
 		throw std::runtime_error(msg);
-	} else {
-		std::printf("start up: ok!\n");
-		std::fflush(stdout);
+#endif
 	}
+	std::printf("ok!\n");
+	std::fflush(stdout);
 }
 
 void Device::download() {
