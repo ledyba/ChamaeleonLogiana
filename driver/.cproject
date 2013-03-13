@@ -70,8 +70,8 @@
 	<storageModule moduleId="org.eclipse.cdt.make.core.buildtargets">
 		<buildTargets>
 			<target name="configure" path="" targetID="org.eclipse.cdt.build.MakeTargetBuilder">
-				<buildCommand>sh</buildCommand>
-				<buildArguments>configure</buildArguments>
+				<buildCommand>python</buildCommand>
+				<buildArguments>waf configure</buildArguments>
 				<buildTarget/>
 				<stopOnError>true</stopOnError>
 				<useDefaultCommand>false</useDefaultCommand>
