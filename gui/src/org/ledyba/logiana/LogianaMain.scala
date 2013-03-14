@@ -25,10 +25,13 @@ import scala.swing.Button
 import org.ledyba.logiana.control.Condition
 import org.ledyba.logiana.control.Session
 import org.ledyba.logiana.control.TriggerLine
+import org.ledyba.logiana.view.WaveGraph
+import scala.swing.ScrollPane
 
 object LogianaMain extends SimpleSwingApplication {
 	var handle : Logiana.Handle = null;
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
+	val waveGraph = new WaveGraph();
 	def start( sess : Session ) {
 		if( handle != null ) {
 		handle.isMeasureing() match {
@@ -49,10 +52,11 @@ object LogianaMain extends SimpleSwingApplication {
 		this.statusLine.text = "測定中…";
 	}
 	override def top = new MainFrame {
+		this.peer.setLocationByPlatform(true);
 		// Windowのタイトル
 		title = "Logic Analyzer"
 		// Windowのサイズ
-		minimumSize = new Dimension(640, 480);
+		preferredSize = new Dimension(640, 480);
 		menuBar = new MenuBar() {
 			contents += new Menu("ファイル(F)") {
 				mnemonic = Key.F;
@@ -72,6 +76,11 @@ object LogianaMain extends SimpleSwingApplication {
 		}
 		contents = new BorderPanel {
 			add(statusLine, BorderPanel.Position.South);
+			add(new ScrollPane(){
+				verticalScrollBarPolicy = ScrollPane.BarPolicy.Always;
+				horizontalScrollBarPolicy = ScrollPane.BarPolicy.Always;
+				viewportView = waveGraph;
+			}, BorderPanel.Position.Center)
 		}
 		override def closeOperation() {
 			super.closeOperation();
@@ -94,6 +103,7 @@ object LogianaMain extends SimpleSwingApplication {
 		}
 	}
 	object SessionDialog extends Dialog {
+		this.peer.setLocationByPlatform(true);
 		title = "Session Setting";
 		val freqDlg = new ComboBox( Frequency.values.toSeq );
 		val mesDlg = new ComboBox( MeasureType.values.toSeq );
@@ -124,6 +134,7 @@ object LogianaMain extends SimpleSwingApplication {
 		}
 	}
 	object VersionDialog extends Dialog {
+		this.peer.setLocationByPlatform(true);
 		title = "About";
 		contents = new GridBagPanel {
 			layout += new Label("ロジックアナライザ・ウォッチャー") -> new Constraints { gridx=0;gridy=0;weightx=1.0f; }

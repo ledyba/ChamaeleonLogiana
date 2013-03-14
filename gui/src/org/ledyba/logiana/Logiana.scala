@@ -27,7 +27,7 @@ object Logiana {
 	
 	def find() = new Handle(find_.invokePointer(Array()));
 	def startMeasuring(hnd : Handle, sess:Session) : Either[String, Boolean] = {
-		val codes = List(sess.freqCode, sess.measureTypeCode, sess.condCode, sess.lineCode).map(x => new java.lang.Byte(x)).toArray[Object];
+		val codes = List(sess.freq.code, sess.measureType.code, sess.cond.code, sess.line.code).map(x => new java.lang.Byte(x)).toArray[Object];
 		val ret = startMeasuring_.invokeInt(Array[Object](hnd.ptr)++codes);
 		if( ret == 0 ){
 			return Right(true);
