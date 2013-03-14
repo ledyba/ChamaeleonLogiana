@@ -25,10 +25,10 @@
 extern "C" {
 #endif
 
-DYNAPI extern void* findLogiana();
-DYNAPI extern int nowLogianaMeasuring(void* device);
-DYNAPI extern int startMeasuring(void* device, char freq, char mesType, char cond, char line );
-DYNAPI extern int endMeasuring(void* device, unsigned int* buffer, int buflen);
+DYNAPI extern int findLogiana(void** ptr, char* err, int errlen);
+DYNAPI extern int nowLogianaMeasuring(void* device, char* err, int errlen);
+DYNAPI extern int startMeasuring(void* device, char* err, int errlen, char freq, char mesType, char cond, char line );
+DYNAPI extern int endMeasuring(void* device, char* err, int errlen, unsigned int* buffer, int buflen);
 DYNAPI extern void closeLogiana(void* device);
 
 #ifdef __cplusplus

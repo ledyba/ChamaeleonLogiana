@@ -8,11 +8,12 @@
 #include <cstdio>
 #define DLL_EXPORT
 #include "dynamic.h"
+#include <string>
 #include "../device/Host.h"
 #include "../device/Device.h"
 using namespace logiana;
 
-extern void* DYNAPI findLogiana()
+extern int DYNAPI findLogiana(void** ptr, char* err, int errlen)
 {
 	try {
 		std::unique_ptr<Device> dev = host().find();
@@ -33,50 +34,47 @@ extern void* DYNAPI findLogiana()
 			}
 		}
 		if(!dev) {
-			std::fprintf(stderr, "EzUSB device is not found.\n");
-			return nullptr;
+			std::snprintf(err, errlen, "EzUSB device is not found.");
+			return -1;
 		} else if(!dev->isLogicAnalyzer()) {
-			std::fprintf(stderr, "Failed to open EzUSB device.\n");
-			return nullptr;
+			std::snprintf(err, errlen, "Failed to open EzUSB device.");
+			return -1;
 		} else {
-			std::printf("load device: %p\n", dev.get());
+			dev->bootLogicAnalyzer();
+			*ptr = dev.release();
+			return 0;
 		}
-
-		dev->bootLogicAnalyzer();
-		return dev.release();
 	}catch(std::exception& e) {
-		std::string const msg("Failed to open EzUSB device: ");
-		std::fprintf(stderr, (msg+e.what()+"\n").c_str());
+		std::snprintf(err, errlen, "Failed to open EzUSB device: %s", e.what());
+		return -1;
 	} catch(...) {
-		std::fprintf(stderr, "Caught unknown exception during finding logiana.\n");
+		std::snprintf(err, errlen, "Caught unknown exception during finding logiana.");
+		return -1;
 	}
-	return nullptr;
+	return -1;
 }
-int nowLogianaMeasuring(void* device)
+extern int DYNAPI nowLogianaMeasuring(void* device, char* err, int errlen)
 {
 	if( !device ) {
-		std::fprintf(stderr, "device handler is null.\n");
+		std::snprintf(err, errlen, "device handler is null.");
 		return -1;
 	}
 	try {
 		Device* const dev = reinterpret_cast<Device*>(device);
-		return dev->isMeasuring() ? 0 : 1;
+		return dev->isMeasuring() ? 1 : 0;
 	} catch(std::exception& e) {
-		std::string msg("Failed to check measuring or not now: ");
-		msg += e.what();
-		msg += "\n";
-		std::fprintf(stderr, msg.c_str());
+		std::snprintf(err, errlen, "Failed to check measuring or not now: %s", e.what());
 		return -2;
 	} catch(...) {
-		std::fprintf(stderr, "Caught unknown exception during checking whether measuring or not now\n");
+		std::snprintf(err, errlen, "Caught unknown exception during checking whether measuring or not now");
 		return -3;
 	}
 	return -4;
 }
-int startMeasuring(void* device, char freq, char mesType, char cond, char line )
+DYNAPI extern int startMeasuring(void* device, char* err, int errlen, char freq, char mesType, char cond, char line )
 {
 	if( !device ) {
-		std::fprintf(stderr, "device handler is null.\n");
+		std::snprintf(err, errlen, "device handler is null.");
 		return -1;
 	}
 	Device* const dev = reinterpret_cast<Device*>(device);
@@ -85,21 +83,18 @@ int startMeasuring(void* device, char freq, char mesType, char cond, char line )
 		dev->startMeasuring(sess);
 		return 0;
 	} catch ( std::exception& e ) {
-		std::string msg("Failed to start measuring: ");
-		msg += e.what();
-		msg += "\n";
-		std::fprintf(stderr, msg.c_str());
+		std::snprintf(err, errlen, "Failed to start measuring: %s", e.what());
 		return -1;
 	} catch(...) {
-		std::fprintf(stderr, "Caught unknown exception during starting measuring\n");
+		std::snprintf(err, errlen, "Caught unknown exception during starting measuring.");
 		return -2;
 	}
 	return -3;
 }
-int endMeasuring(void* device, unsigned int* buffer, int buflen)
+DYNAPI extern int endMeasuring(void* device, char* err, int errlen, unsigned int* buffer, int buflen)
 {
 	if( !device ) {
-		std::fprintf(stderr, "device handler is null.\n");
+		std::snprintf(err, errlen, "device handler is null.");
 		return -1;
 	}
 	Device* const dev = reinterpret_cast<Device*>(device);
@@ -121,13 +116,10 @@ int endMeasuring(void* device, unsigned int* buffer, int buflen)
 		}
 		return bufi;
 	} catch ( std::exception& e ) {
-		std::string msg("Failed to start measuring: ");
-		msg += e.what();
-		msg += "\n";
-		std::fprintf(stderr, msg.c_str());
+		std::snprintf(err, errlen, "Failed to start measuring: %s", e.what());
 		return -1;
 	} catch(...) {
-		std::fprintf(stderr, "Caught unknown exception during starting measuring\n");
+		std::snprintf(err, errlen, "Caught unknown exception during starting measuring.");
 		return -2;
 	}
 	return -3;
