@@ -27,29 +27,57 @@ import org.ledyba.logiana.control.Session
 import org.ledyba.logiana.control.TriggerLine
 import org.ledyba.logiana.view.WaveGraph
 import scala.swing.ScrollPane
+import javax.swing.SwingWorker
+import org.ledyba.logiana.model.WaveData
 
 object LogianaMain extends SimpleSwingApplication {
 	var handle : Logiana.Handle = null;
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	val waveGraph = new WaveGraph();
 	def start( sess : Session ) {
-		if( handle != null ) {
-		handle.isMeasureing() match {
-			case Left(x) => { statusLine.text="error: "++x; return }
-			case Right(true) => {
-				this.statusLine.text = "すでに計測中です";
-				return;
-			}
-			case _ => {}
-			}
-		}else{
-			this.handle = Logiana.find();
-			if(this.handle == null){
-				statusLine.text="error: Failed to open EzUSB";
-				return;
+		if(handle == null){
+			Logiana.find() match {
+				case Left(msg) => statusLine.text=msg;return;
+				case Right(hnd) => this.handle = hnd
 			}
 		}
-		this.statusLine.text = "測定中…";
+		handle.start(sess) match {
+			case Left(msg) => statusLine.text = msg;
+			case Right(res) => {
+				statusLine.text = "計測中…";
+				val sensor = new SwingWorker[Either[String, WaveData],Unit](){
+					override def doInBackground():Either[String, WaveData] = {
+						while(true){
+							val mes = handle.isMeasureing()
+							mes match {
+								case Right(x) => {
+									if(x){
+										Thread.sleep(1000);
+									}else{
+										return handle.end(sess)
+									}
+								}
+								case Left(x) => return Left(x);
+							}
+						}
+						return Left("Why came here?");
+					}
+					override def done() = {
+						val result = get;
+						result match {
+							case Right(x) => {
+								statusLine.text="正常に終了しました。";
+								waveGraph.data_(x);
+								handle.close;
+								handle = null;
+							}
+							case Left(x) => statusLine.text=x;
+						}
+					}
+				}
+				sensor.execute()
+			}
+		}
 	}
 	override def top = new MainFrame {
 		this.peer.setLocationByPlatform(true);

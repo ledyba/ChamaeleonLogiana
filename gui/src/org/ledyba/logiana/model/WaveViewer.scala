@@ -7,5 +7,7 @@ class WaveViewer() extends Serializable {
 	var dotsPerNanoSec:Float = 0.1f;
 	var data:WaveData = new WaveData();
 	var signals:Buffer[Signal] = new ListBuffer[Signal]();
-	signals += new ValueSignal(Array((0,false)));
+	for( i<-Range(0,32) ) {
+		signals += new LineSignal("Probe: %02d".format(i), i);
+	}
 }

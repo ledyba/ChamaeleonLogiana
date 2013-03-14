@@ -9,6 +9,9 @@ PYTHON := python
 WAF := ./waf
 OPT += 
 
+64:
+	CXX=x86_64-w64-mingw32-g++ CC=x86_64-w64-mingw32-gcc $(PYTHON) $(WAF) configure build
+
 all:
 	$(PYTHON) $(WAF) $(OPT) build
 

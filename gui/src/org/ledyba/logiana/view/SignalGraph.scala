@@ -56,14 +56,14 @@ class SignalGraph(_view : WaveViewer, _signal:Signal) extends Panel {
 					val x = (i*view.data.nanosecPerEntry*view.dotsPerNanoSec).intValue;
 					if(first){
 						g.setColor(Color.BLACK);
-						g.drawString(sig.toString, x+3f,  20f);
+						g.drawString("%04x".format(sig), x+3f,  20f);
 						lastChangedX = x;
 					}else if(lastSig != sig) {
 						g.setColor(Color.RED);
 						g.drawLine(lastX, 5, x, 25);
 						g.drawLine(lastX, 25, x, 5);
 						g.setColor(Color.BLACK);
-						g.drawString(sig.toString, lastChangedX+3f,  20f);
+						g.drawString("%04x".format(sig), lastChangedX+3f,  20f);
 						lastChangedX = x;
 					}else if(lastX >= 0){
 						g.setColor(Color.GREEN);

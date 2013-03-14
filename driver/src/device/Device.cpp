@@ -225,8 +225,9 @@ bool Device::isMeasuring()
 	char buf[1];
 	buf[0] = ( GPFW_GET | 0x04 );
 	this->controlWrite(buf);
+	buf[0] = 0;
 	this->bulkRead(buf);
-	return (buf[0] & 0x08) == 0;
+	return (buf[0] & 0x08) == 0x00;
 }
 
 std::vector<char> Device::endProbe()

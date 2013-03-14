@@ -29,6 +29,6 @@ class WaveData(sess:Session, dat : Array[Int]) extends Serializable {
 		return (dat(idx) & mask) == mask
 	}
 	def signalAtTime(time : Float, signal : Int) = signalAt(timeToIndex(time), signal)
-	lazy val length:Int = dat.length;
-	lazy val nanosecPerEntry:Float = sess.freq.nanosec;
+	val length:Int = dat.length;
+	val nanosecPerEntry:Float = sess.freq.nanosec;
 }
