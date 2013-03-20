@@ -31,22 +31,22 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 		val startSecOff = (rect.x/signal.parent.dotsPerNanoSec);
 		val startIdx = (startSecOff/signal.parent.data.nanosecPerEntry).floor.intValue;
 		val endSecOff = ((rect.x+rect.width)/signal.parent.dotsPerNanoSec);
-		val endIdx = (endSecOff/signal.parent.data.nanosecPerEntry).ceil.intValue;
+		val endIdx = Math.min(signal.parent.data.length,(endSecOff/signal.parent.data.nanosecPerEntry).ceil.intValue+1);
 		signal match {
 			case lsig:LineSignal => {
 				g.setColor(Color.RED);
 				g.setStroke(new BasicStroke(3));
-				var lastX:Int=(-1);
-				var lastY:Int=(-1);
-				for( i <- Range(startIdx, endIdx-1) ) {
+				var lastX:Int=0;
+				var lastSig=false;
+				for( i <- Range(startIdx, endIdx) ) {
 					val sig = lsig.fromWaveData(signal.parent.data, (i*signal.parent.data.nanosecPerEntry)+SignalGraph.this.signal.parent.data.beginTime);
-					val x = (i*signal.parent.data.nanosecPerEntry*signal.parent.dotsPerNanoSec).intValue;
+					val x = ((i+1)*signal.parent.data.nanosecPerEntry*signal.parent.dotsPerNanoSec).intValue;
 					val y = if(sig) 5 else 25;
-					if(lastX >= 0 && lastY >= 0) {
-						g.drawLine(lastX, lastY, x, y);
+					if(lastSig != sig) {
+						g.drawLine(lastX, 5, lastX, 25);
 					}
+					g.drawLine(lastX, y, x, y);
 					lastX=x;
-					lastY=y;
 				}
 			}
 			case vsig:ValueSignal => {
@@ -57,23 +57,18 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 				var lastChangedX = 0;
 				for( i <- Range(startIdx, endIdx) ) {
 					val sig = vsig.fromWaveData(SignalGraph.this.signal.parent.data, (i*SignalGraph.this.signal.parent.data.nanosecPerEntry)+SignalGraph.this.signal.parent.data.beginTime);
-					val x = (i*SignalGraph.this.signal.parent.data.nanosecPerEntry*SignalGraph.this.signal.parent.dotsPerNanoSec).intValue;
-					if(first){
+					val x = ((i+1)*SignalGraph.this.signal.parent.data.nanosecPerEntry*SignalGraph.this.signal.parent.dotsPerNanoSec).intValue;
+					if(first || lastSig != sig){
 						g.setColor(Color.BLACK);
-						g.drawString("%04x".format(sig), x+3f,  20f);
+						g.drawString("%04x".format(sig), lastX+3f,  20f);
 						lastChangedX = x;
-					}else if(lastSig != sig) {
-						g.setColor(Color.RED);
-						g.drawLine(lastX, 5, x, 25);
-						g.drawLine(lastX, 25, x, 5);
-						g.setColor(Color.BLACK);
-						g.drawString("%04x".format(sig), lastChangedX+3f,  20f);
-						lastChangedX = x;
-					}else if(lastX >= 0){
 						g.setColor(Color.GREEN);
 						g.drawLine(lastX, 5, x, 5);
 						g.drawLine(lastX, 25, x, 25);
 					}
+					g.setColor(Color.GREEN);
+					g.drawLine(lastX, 5, x, 5);
+					g.drawLine(lastX, 25, x, 25);
 					first=false;
 					lastSig = sig;
 					lastX=x;
@@ -90,8 +85,8 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 	this.update;
 	val edit = {x:Signal=>
 		x match {
-				case i:LineSignal => (new LineSignalDialog(i)).open
-				case i:ValueSignal => (new ValueSignalDialog(i)).open
+				case i:LineSignal => (new LineSignalDialog(i)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
+				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
 		}};
 	popupMenu.contents += new MenuItem(Action("edit"){
 		edit(signal);
@@ -101,11 +96,13 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 	});
 	popupMenu.contents += new MenuItem(Action("add new line signal"){
 		val newsig = LineSignal(SignalGraph.this.signal.parent, "new", 0);
-		(new LineSignalDialog(newsig)).open
+		SignalGraph.this.parent.addGraphLast(newsig)
+		(new LineSignalDialog(newsig)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
 	});
 	popupMenu.contents += new MenuItem(Action("add new value signal"){
-			val newsig = ValueSignal(SignalGraph.this.signal.parent, "new", (0 to 7).toArray.map(i=>(i,false)));
-			(new ValueSignalDialog(newsig)).open
+		val newsig = ValueSignal(SignalGraph.this.signal.parent, "new", (0 to 7).toArray.map(i=>(i,false)));
+		SignalGraph.this.parent.addGraphLast(newsig)
+		(new ValueSignalDialog(newsig)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
 	});
 	popupMenu.contents += new MenuItem(Action("clear"){
 		parent.signals=ListBuffer();

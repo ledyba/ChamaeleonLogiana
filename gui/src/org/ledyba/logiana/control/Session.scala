@@ -11,7 +11,7 @@ import org.ledyba.logiana.model.WaveData
 import javax.swing.SwingUtilities
 import org.ledyba.logiana.Config
 
-class Session(_freq : Frequency.Value, _type:MeasureType.Value, _cond:Condition.Value, _line:TriggerLine.Value){
+class Session(_freq : Frequency.Value, _type:MeasureType.Value, _cond:Condition.Value, _line:TriggerLine.Value) extends Serializable{
 	val freq = _freq;
 	val measureType = _type;
 	val cond = _cond;

@@ -34,12 +34,16 @@ import org.ledyba.logiana.control.Logiana
 import java.util.concurrent.atomic.AtomicBoolean
 import org.ledyba.logiana.control.SessionRunner
 import org.ledyba.logiana.control.SessionRunner
+import scala.swing.GridPanel
+import scala.swing.BoxPanel
+import scala.swing.Orientation
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
+	val kLastFilename="./last.bin"
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
-	val waveGraph = new WaveGraph();
+	val waveGraph = new WaveGraph(kLastFilename);
 	var session:SessionRunner = null;
 	val conf = Config(kConfigFilename);
 	def start( sess : Session ) {
@@ -101,14 +105,25 @@ object LogianaMain extends SimpleSwingApplication {
 		}
 		contents = new BorderPanel {
 			add(statusLine, BorderPanel.Position.South);
-			add(new ScrollPane(){
-				verticalScrollBarPolicy = ScrollPane.BarPolicy.Always;
-				horizontalScrollBarPolicy = ScrollPane.BarPolicy.Always;
-				viewportView = waveGraph;
+			add(new GridBagPanel(){
+				this.add(new ScrollPane(){
+					verticalScrollBarPolicy = ScrollPane.BarPolicy.Always;
+					horizontalScrollBarPolicy = ScrollPane.BarPolicy.Always;
+					viewportView = waveGraph;
+				}, new Constraints(){gridx=0;gridy=0;weightx=1;weighty=1;fill=GridBagPanel.Fill.Both});
+				this.add(new BoxPanel(Orientation.Horizontal){
+					this.contents+=new Button(Action("+"){
+						waveGraph.upscale;
+					});
+					this.contents+=new Button(Action("-"){
+						waveGraph.downscale;
+					});
+				}, new Constraints(){gridx=0;gridy=1;weightx=1;fill=GridBagPanel.Fill.Horizontal});
 			}, BorderPanel.Position.Center)
 		}
 		override def closeOperation() {
 			conf.write(kConfigFilename);
+			waveGraph.save;
 			super.closeOperation();
 		}
 		def openMeasureDialog() {

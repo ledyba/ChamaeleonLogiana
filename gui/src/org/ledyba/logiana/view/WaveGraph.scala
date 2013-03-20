@@ -20,14 +20,28 @@ import scala.swing.TextField
 import scala.swing.ComboBox
 import java.awt.Dimension
 import org.ledyba.logiana.model.LineSignal
+import scala.swing.Component
 
-class WaveGraph extends GridBagPanel with PopupMenuContainer {
-	val view = new WaveViewer();
+class WaveGraph(val fname:String) extends GridBagPanel with PopupMenuContainer {
+	private val view = WaveViewer(fname);
 	def data = Unit;
 	def data_=(newdata : WaveData):Unit = {
 		this.view.data = newdata;
 		this.updateData
-	}	
+	}
+	def save() {
+		view.write(fname);
+	}
+	def downscale() = {
+		view.dotsPerNanoSec /= 2;
+		this.updateData
+		this.revalidate();
+	}
+	def upscale() = {
+		view.dotsPerNanoSec *= 2;
+		this.updateData
+		this.revalidate();
+	}
 	def signals = this.view.signals;
 	def signals_= (newsignals : Buffer[Signal]) {
 		this.view.signals = newsignals;
@@ -54,35 +68,46 @@ class WaveGraph extends GridBagPanel with PopupMenuContainer {
 		}
 		this.peer.revalidate();
 	}
-	private def addGraphLast(x:Signal) = {
+	def addGraphLast(x:Signal) = {
 		val i = this.signalGraphs.length;
 		val l = new Label(x.name);
 		val c = new SignalGraph(this, x);
 		this.add(l, (0,i));
 		this.add(c, (1,i))
+		this.view.signals+=x;
 		signalGraphs += ((l,c));
 		this.revalidate;
+		this.peer.getParent().revalidate();
+	}
+	def updateGraphLast(x:Signal) = {
+		for( edit <- this.signalGraphs.filter({ it=>val (l,c)=it;c.signal == x })){
+			val (l,c) = edit;
+			l.text=c.signal.name;
+		}
+		this.revalidate;
+		this.peer.getParent().revalidate();
 	}
 	def delGraphLast(x:Signal) = {
-		val del = this.signalGraphs.filter({ x=>val (l,c)=x;c.signal == x })
+		val del = this.signalGraphs.filter({ it=>val (l,c)=it;c.signal == x })
 		for( d <- del ) {
 			val (l,c) = d;
+			this.view.signals-=c.signal;
 			signalGraphs -= d;
 			this.peer.remove(l.peer);
 			this.peer.remove(c.peer);
 		}
 		this.revalidate;
+		this.peer.getParent().revalidate();
 	}
 	popupMenu.contents += new MenuItem(Action("add new line signal"){
-		(new LineSignalDialog(LineSignal(view, "new", 0))).open({sig =>
-			WaveGraph.this.addGraphLast(sig);
-		});
+		val sig = LineSignal(view, "new", 0);
+		WaveGraph.this.addGraphLast(sig)
+		new LineSignalDialog(sig).open({sig=>WaveGraph.this.updateGraphLast(sig)});
 	});
 	popupMenu.contents += new MenuItem(Action("add new value signal"){
-			val newsig = ValueSignal(view, "new", (0 to 7).toArray.map(i=>(i,false)));
-			(new ValueSignalDialog(newsig)).open({sig =>
-			WaveGraph.this.addGraphLast(sig);
-		});
+		val sig = ValueSignal(view, "new", (0 to 7).toArray.map(i=>(i,false)));
+		WaveGraph.this.addGraphLast(sig);
+		new ValueSignalDialog(sig).open({sig=>WaveGraph.this.updateGraphLast(sig)});
 	});
 	popupMenu.contents += new MenuItem(Action("clear"){
 		signals=ListBuffer();
@@ -103,12 +128,12 @@ sealed class LineSignalDialog(val sig:LineSignal) extends Dialog{
 		add(new Label("プローブ："), new Constraints(){gridx=0;gridy=1;});
 		add(sigField, new Constraints(){gridx=1;gridy=1;weightx=1;fill=GridBagPanel.Fill.Horizontal;});
 	}
-	var onExit:LineSignal => Unit = null;
+	var onEnd:LineSignal=>Unit = null;
 	override def closeOperation() {
 		sig.name = nameField.text;
 		sig.probeNo = sigField.selection.index;
-		if(onExit != null){
-			this.onExit(sig);
+		if( onEnd != null ){
+			this.onEnd(sig);
 		}
 		super.closeOperation();
 	}
@@ -118,8 +143,9 @@ sealed class LineSignalDialog(val sig:LineSignal) extends Dialog{
 		this.peer.setLocationByPlatform(true);
 		super.open();
 	}
-	def open(x:LineSignal => Unit) = {
-		this.onExit = x;
+	def open(lamb:LineSignal=>Unit) = {
+		this.onEnd = lamb;
+		this.peer.setLocationByPlatform(true);
 		super.open();
 	}
 }
@@ -139,7 +165,7 @@ sealed class ValueSignalDialog(val sig:ValueSignal) extends Dialog{
 		add(new Label("プローブ："), new Constraints(){gridx=0;gridy=1;});
 		add(sigField, new Constraints(){gridx=1;gridy=1;fill=GridBagPanel.Fill.Horizontal;})
 	}
-	var onExit:ValueSignal => Unit = null;
+	var onEnd:ValueSignal=>Unit = null;
 	override def closeOperation() {
 		def parse(x:String)={
 			if(x.startsWith("!")){
@@ -150,8 +176,8 @@ sealed class ValueSignalDialog(val sig:ValueSignal) extends Dialog{
 		}
 		sig.name = nameField.text;
 		sig.lines = sigField.text.split("\\s+").map(parse)
-		if(onExit != null){
-			this.onExit(sig);
+		if( onEnd != null ){
+			this.onEnd(sig);
 		}
 		super.closeOperation();
 	}
@@ -161,8 +187,9 @@ sealed class ValueSignalDialog(val sig:ValueSignal) extends Dialog{
 		this.peer.setLocationByPlatform(true);
 		super.open();
 	}
-	def open(x:ValueSignal => Unit) = {
-		this.onExit = x;
+	def open(lamb:ValueSignal=>Unit) = {
+		this.onEnd = lamb;
+		this.peer.setLocationByPlatform(true);
 		super.open();
 	}
 }
