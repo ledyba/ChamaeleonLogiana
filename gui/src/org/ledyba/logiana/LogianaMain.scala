@@ -26,57 +26,41 @@ import org.ledyba.logiana.control.Condition
 import org.ledyba.logiana.control.Session
 import org.ledyba.logiana.control.TriggerLine
 import org.ledyba.logiana.view.WaveGraph
+import org.ledyba.logiana.view.PopupMenuContainer
 import scala.swing.ScrollPane
 import javax.swing.SwingWorker
 import org.ledyba.logiana.model.WaveData
+import org.ledyba.logiana.control.Logiana
+import java.util.concurrent.atomic.AtomicBoolean
+import org.ledyba.logiana.control.SessionRunner
+import org.ledyba.logiana.control.SessionRunner
 
 object LogianaMain extends SimpleSwingApplication {
-	var handle : Logiana.Handle = null;
+	val kConfigFilename = "./conf.bin";
+	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	val waveGraph = new WaveGraph();
+	var session:SessionRunner = null;
+	val conf = Config(kConfigFilename);
 	def start( sess : Session ) {
-		if(handle == null){
-			Logiana.find() match {
-				case Left(msg) => statusLine.text=msg;return;
-				case Right(hnd) => this.handle = hnd
-			}
-		}
-		handle.start(sess) match {
-			case Left(msg) => statusLine.text = msg;
-			case Right(res) => {
-				statusLine.text = "計測中…";
-				val sensor = new SwingWorker[Either[String, WaveData],Unit](){
-					override def doInBackground():Either[String, WaveData] = {
-						while(true){
-							val mes = handle.isMeasureing()
-							mes match {
-								case Right(x) => {
-									if(x){
-										Thread.sleep(1000);
-									}else{
-										return handle.end(sess)
-									}
-								}
-								case Left(x) => return Left(x);
-							}
-						}
-						return Left("Why came here?");
+		if(this.session == null) {
+			this.session = new SessionRunner(conf, sess, v=>
+				v match {
+					case Left(msg) => {
+						statusLine.text=msg;
+						session = null;
 					}
-					override def done() = {
-						val result = get;
-						result match {
-							case Right(x) => {
-								statusLine.text="正常に終了しました。";
-								waveGraph.data_(x);
-								handle.close;
-								handle = null;
-							}
-							case Left(x) => statusLine.text=x;
-						}
+					case Right(wavedata) => {
+						statusLine.text="計測が正常に終了しました。";
+						waveGraph.data=wavedata;
+						session = null;
 					}
 				}
-				sensor.execute()
-			}
+			)
+			session.start();
+			statusLine.text="計測中…";
+		}else{
+			statusLine.text="すでに計測中です。";
 		}
 	}
 	override def top = new MainFrame {
@@ -88,12 +72,25 @@ object LogianaMain extends SimpleSwingApplication {
 		menuBar = new MenuBar() {
 			contents += new Menu("ファイル(F)") {
 				mnemonic = Key.F;
+				contents += new MenuItem(Action("計測中止") {
+					if(session == null){
+						statusLine.text="計測が開始されていません。";
+					}else{
+						session.sendExit;
+					}
+				}) { mnemonic = Key.S; }
 				contents += new MenuItem(Action("計測開始") {
 					openMeasureDialog();
 				}) { mnemonic = Key.S; }
 				contents += new MenuItem(Action("終了(E)") { LogianaMain.quit(); }) {
 					mnemonic = Key.E;
 				}
+			}
+			contents += new Menu("編集") {
+				mnemonic = Key.F;
+				contents += new MenuItem(Action("設定") {
+					new ConfigDialog(conf).open
+				}) { mnemonic = Key.S; }
 			}
 			contents += new Menu("ヘルプ（H)") {
 				mnemonic = Key.H;
@@ -111,23 +108,15 @@ object LogianaMain extends SimpleSwingApplication {
 			}, BorderPanel.Position.Center)
 		}
 		override def closeOperation() {
+			conf.write(kConfigFilename);
 			super.closeOperation();
 		}
 		def openMeasureDialog() {
-			if( handle != null ) {
-				handle.isMeasureing() match {
-					case Left(x) => {
-						statusLine.text="IOエラー："++x;
-						return;
-					}
-					case Right(true) => {
-						statusLine.text = "すでに計測中です";
-						return;
-					}
-					case _ => {}
-				}
+			if( session != null ) {
+				statusLine.text="計測中なので、ダイアログを開けません。";
+			}else{
+				SessionDialog.open();
 			}
-			SessionDialog.open();
 		}
 	}
 	object SessionDialog extends Dialog {
@@ -153,12 +142,12 @@ object LogianaMain extends SimpleSwingApplication {
 			layout += new Button(Action("Start") { SessionDialog.this.onStart(); }) -> new Constraints{gridx=0;gridy=100;weightx=1; gridwidth=2; fill=GridBagPanel.Fill.Horizontal}
 		}
 		def onStart () {
-			val freq = freqDlg.selection.item.asInstanceOf[org.ledyba.logiana.control.Frequency.Value];
-			val mes = mesDlg.selection.item.asInstanceOf[org.ledyba.logiana.control.MeasureType.Value];
-			val cond = condDlg.selection.item.asInstanceOf[org.ledyba.logiana.control.Condition.Value];
-			val line = lineDlg.selection.item.asInstanceOf[org.ledyba.logiana.control.TriggerLine.Value];
-			val sess : Session = new Session(freq, mes, cond, line);
-			LogianaMain.start( sess );
+			val freq = freqDlg.selection.item.asInstanceOf[Frequency.Value];
+			val mes = mesDlg.selection.item.asInstanceOf[MeasureType.Value];
+			val cond = condDlg.selection.item.asInstanceOf[Condition.Value];
+			val line = lineDlg.selection.item.asInstanceOf[TriggerLine.Value];
+			LogianaMain.start( new Session(freq, mes, cond, line) );
+			this.close;
 		}
 	}
 	object VersionDialog extends Dialog {

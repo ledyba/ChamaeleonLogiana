@@ -31,4 +31,5 @@ object Frequency extends Enumeration {
 	val _10KHz   = new Value("10KHz", 100000.0f, 13);
 	val _1KHz    = new Value("1KHz", 1000000.0f, 14);
 	val _EXT     = new Value("EXT", 1, 15);
+	override lazy val values = super.values.map(x=>x.asInstanceOf[Frequency.Value])
 }

@@ -8,6 +8,6 @@ class WaveViewer() extends Serializable {
 	var data:WaveData = new WaveData();
 	var signals:Buffer[Signal] = new ListBuffer[Signal]();
 	for( i<-Range(0,32) ) {
-		signals += new LineSignal("Probe: %02d".format(i), i);
+		signals += new LineSignal(this, "Probe: %02d".format(i), i);
 	}
 }

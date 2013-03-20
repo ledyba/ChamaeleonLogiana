@@ -1,16 +1,19 @@
 package org.ledyba.logiana.model
 
-sealed abstract class Signal extends Serializable {
+sealed abstract class Signal(val parent:WaveViewer) extends Serializable {
 	def repr:String;
+	def name:String;
 }
 
-case class LineSignal(val repr:String, probeNo:Int) extends Signal with Serializable {
+case class LineSignal(override val parent:WaveViewer, var name:String, var probeNo:Int) extends Signal(parent) with Serializable {
 	def fromWaveData(wavData:WaveData, time:Float):Boolean = {
 		return wavData.signalAtTime(time, probeNo);
 	}
+	override def repr() = "LineSignal: "++name++" (probe"+probeNo+")"
+	override def toString=repr;
 }
 
-case class ValueSignal(val repr:String, lines:Array[(Int, Boolean)]) extends Signal with Serializable {
+case class ValueSignal(override val parent:WaveViewer, var name:String, var lines:Array[(Int, Boolean)]) extends Signal(parent) with Serializable {
 	def fromWaveData(wavData:WaveData, time:Float):Int = {
 		var idx=(-1);
 		return lines.foldLeft(0)( (sig:Int, sigData) => {
@@ -23,4 +26,7 @@ case class ValueSignal(val repr:String, lines:Array[(Int, Boolean)]) extends Sig
 			}
 		});
 	}
+
+	override def repr() = "ValueSignal: "++name++" (probe: "+(lines.map({x => val (num, isNega)=x; (if(isNega) ("!" ++ num.toString) else num.toString)}).mkString(","))+")"
+	override def toString=repr;
 }

@@ -15,4 +15,5 @@ object Condition extends Enumeration {
 	val NegEdge    = new Value("NegEdge", 1)
 	val High       = new Value("High",    2)
 	val Low        = new Value("Low",     3)
+	override lazy val values = super.values.map(x=>x.asInstanceOf[Condition.Value])
 }

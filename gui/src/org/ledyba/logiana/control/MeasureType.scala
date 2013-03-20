@@ -14,4 +14,5 @@ object MeasureType extends Enumeration {
 	val Top    = new Value("Top",    0)
 	val Center = new Value("Center", 1)
 	val Last   = new Value("Last",   2)
+	override lazy val values = super.values.map(x=>x.asInstanceOf[MeasureType.Value])
 }

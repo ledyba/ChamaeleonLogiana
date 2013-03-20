@@ -27,4 +27,5 @@ object TriggerLine extends Enumeration {
 	val Probe13 = new Value("Probe13", 13)
 	val Probe14 = new Value("Probe14", 14)
 	val HDL     = new Value("HDL",     15)
+	override lazy val values = super.values.map(x=>x.asInstanceOf[TriggerLine.Value])
 }
