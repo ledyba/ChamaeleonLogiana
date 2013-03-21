@@ -63,19 +63,45 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 		rect.width = Math.min(size.width-labelWidth, rect.width+100);
 		val vrect = new Rectangle(0,0,graphWidth, SignalGraph.kSignalViewHeight);
 		val lineEnd = Math.min(graphWidth, rect.x+rect.width);
-		for( gr <-graphs ) {
-			// draw label
-			g.setFont(font);
-			val labelHeight = metrics.getStringBounds(gr.signal.name, g).getBounds2D().getY();
-			g.drawString(gr.signal.name, (-labelWidth+2).toFloat, ((SignalGraph.kSignalViewHeight-labelHeight)/2).toFloat);
-			// draw signal
-			val inter=rect.intersection(vrect);
-			gr.paintComponent(g, inter);
-			g.setColor(Color.BLACK);
-			g.setStroke(new BasicStroke(2));
-			g.drawLine(rect.x, SignalGraph.kSignalViewHeight, lineEnd, SignalGraph.kSignalViewHeight);
-			rect.y -= SignalGraph.kSignalViewHeight+2;
-			g.translate(0, SignalGraph.kSignalViewHeight+2);
+		{
+			val g2=g.create().asInstanceOf[Graphics2D];
+			try {
+				for( gr <-graphs ) {
+					// draw label
+					g2.setFont(font);
+					val labelHeight = metrics.getStringBounds(gr.signal.name, g).getBounds2D().getY();
+					g2.setColor(Color.BLACK);
+					g2.drawString(gr.signal.name, (-labelWidth+2).toFloat, ((SignalGraph.kSignalViewHeight-labelHeight)/2).toFloat);
+					// draw signal
+					gr.paintComponent(g2, rect.intersection(vrect));
+					if( this.lastSignal == gr.signal ) {
+						g.setColor(Color.BLACK);
+						g.draw3DRect(-labelWidth, 0, preferredSize.width, SignalGraph.kSignalViewHeight, true);
+					}
+					rect.y -= SignalGraph.kSignalViewHeight+2;
+					g2.translate(0, SignalGraph.kSignalViewHeight+2);
+				}
+			} finally {
+				g2.dispose();
+			}
+		}
+		def norm(acc:Int, t:Float):Int = {
+			if (acc >= t)
+				return acc;
+			else
+				return norm(acc*2, t)
+		}
+		val dotsPerNsec = view.dotsPerNanoSec;
+		val nsecPerLine = (100/dotsPerNsec).ceil
+		val begin = this.view.data.beginTime+(rect.x/dotsPerNsec);
+		val end = Math.min(this.view.data.endTime, this.view.data.beginTime+((rect.x+rect.width)/dotsPerNsec));
+		val offset = -(dotsPerNsec * this.view.data.beginTime)
+		g.setColor(Color.darkGray);
+		for( l <- ( (begin/nsecPerLine).toInt to (end/nsecPerLine).toInt ) ) {
+			val t = l * nsecPerLine;
+			val x = (offset + (t * dotsPerNsec)).toInt;
+			g.drawLine(x, 0, x, preferredSize.height);
+			g.drawString("%.1fnsec".format(t.toFloat), x, 10);
 		}
 	}
 	def updateView = {
@@ -146,8 +172,13 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 	this.reactions += {
 		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
 			val lastSelected = (point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
-			if(lastSelected >= 0 && lastSelected < graphs.length && clicks % 2 == 0) {
-				edit(this.view.signals(lastSelected));
+			if(lastSelected >= 0 && lastSelected < graphs.length) {
+				if(clicks % 2 == 0){
+					edit(this.view.signals(lastSelected));
+				}else{
+					this.lastSignal = this.view.signals(lastSelected);
+					updateView;
+				}
 			}
 		}
 		case ev:MousePressed => {
@@ -155,6 +186,7 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 				val lastSelected = (ev.point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
 				if(lastSelected >= 0 && lastSelected < graphs.length) {
 					lastSignal = this.view.signals(lastSelected);
+					updateView;
 				}else{
 					lastSignal = null;
 				}

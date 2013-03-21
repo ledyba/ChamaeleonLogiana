@@ -12,11 +12,17 @@ class WaveData(sess:Session, dat : Array[Int]) extends Serializable {
 	def this() = {
 		this(new Session(Frequency._100MHz, MeasureType.Center, Condition.PosEdge, TriggerLine.Probe00), Array.fill(1000)(0));
 	}
+	private val SAMPLES		= (1024*128);
+	private val WAVE_MAX	= 64;
+	private val HBAR_MIN	= (-SAMPLES/4+2)
+	private val HBAR_MAX	= (SAMPLES/4-1-(WAVE_MAX/2)-1)
+	private val HBAR_CENTER	= -17
+	
 	val timeLength = dat.length * sess.freq.nanosec;
 	val beginTime = sess.measureType match{
-		case MeasureType.Center => -(timeLength/2)
-		case MeasureType.Last => -timeLength
-		case MeasureType.Top => 0
+		case MeasureType.Center => -((HBAR_CENTER*2+WAVE_MAX/2) * sess.freq.nanosec)
+		case MeasureType.Last => -((HBAR_MAX*2+WAVE_MAX/2) * sess.freq.nanosec)
+		case MeasureType.Top => -((HBAR_MIN*2+24) * sess.freq.nanosec)
 	}
 	val endTime = sess.measureType match{
 		case MeasureType.Center => (timeLength/2)
