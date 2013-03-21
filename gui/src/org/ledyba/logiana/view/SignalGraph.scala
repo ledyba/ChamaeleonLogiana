@@ -17,17 +17,17 @@ import java.awt.event.MouseAdapter
 import scala.collection.mutable.ListBuffer
 import java.awt.event.MouseEvent
 import javax.swing.SwingUtilities
+import java.awt.Font
 
-class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with PopupMenuContainer {
-	border = LineBorder.createBlackLineBorder();
-	override def paintComponent(g:Graphics2D) {
-		//super.paintComponent(g);
-		val rect = peer.getVisibleRect().clone().asInstanceOf[Rectangle];
+object SignalGraph {
+	val kSignalViewHeight=30;
+}
+class SignalGraph(val parent:WaveGraph, val signal:Signal) {
+	val font = new Font("Monospace", Font.PLAIN, 12);
+	def paintComponent(g:Graphics2D, rect:Rectangle) {
 		g.setColor(Color.WHITE);
 		g.fill(rect);
-		//FIXME: 一応範囲を広げて対処
-		rect.x = Math.max(0, rect.x-50);
-		rect.width = Math.min(size.width-rect.x, rect.width+100);
+
 		val startSecOff = (rect.x/signal.parent.dotsPerNanoSec);
 		val startIdx = (startSecOff/signal.parent.data.nanosecPerEntry).floor.intValue;
 		val endSecOff = ((rect.x+rect.width)/signal.parent.dotsPerNanoSec);
@@ -41,10 +41,12 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 				for( i <- Range(startIdx, endIdx) ) {
 					val sig = lsig.fromWaveData(signal.parent.data, (i*signal.parent.data.nanosecPerEntry)+SignalGraph.this.signal.parent.data.beginTime);
 					val x = ((i+1)*signal.parent.data.nanosecPerEntry*signal.parent.dotsPerNanoSec).intValue;
-					val y = if(sig) 5 else 25;
+					val y = if(sig) 5 else SignalGraph.kSignalViewHeight-5;
 					if(lastSig != sig) {
-						g.drawLine(lastX, 5, lastX, 25);
+						g.setColor(Color.RED);
+						g.drawLine(lastX, 5, lastX, SignalGraph.kSignalViewHeight-5);
 					}
+					g.setColor(Color.GREEN);
 					g.drawLine(lastX, y, x, y);
 					lastX=x;
 				}
@@ -60,15 +62,15 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 					val x = ((i+1)*SignalGraph.this.signal.parent.data.nanosecPerEntry*SignalGraph.this.signal.parent.dotsPerNanoSec).intValue;
 					if(first || lastSig != sig){
 						g.setColor(Color.BLACK);
+						g.setFont(font);
 						g.drawString("%04x".format(sig), lastX+3f,  20f);
 						lastChangedX = x;
-						g.setColor(Color.GREEN);
-						g.drawLine(lastX, 5, x, 5);
-						g.drawLine(lastX, 25, x, 25);
+						g.setColor(Color.RED);
+						g.drawLine(lastX, 5, lastX, SignalGraph.kSignalViewHeight-5);
 					}
 					g.setColor(Color.GREEN);
 					g.drawLine(lastX, 5, x, 5);
-					g.drawLine(lastX, 25, x, 25);
+					g.drawLine(lastX, SignalGraph.kSignalViewHeight-5, x, SignalGraph.kSignalViewHeight-5);
 					first=false;
 					lastSig = sig;
 					lastX=x;
@@ -76,42 +78,4 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) extends Panel with Po
 			}
 		}
 	}
-	def update() = {
-		val psize = new Dimension((SignalGraph.this.signal.parent.data.timeLength*SignalGraph.this.signal.parent.dotsPerNanoSec).toInt, 30);
-		this.preferredSize = psize
-		this.minimumSize = psize;
-		this.maximumSize = psize;
-	}
-	this.update;
-	val edit = {x:Signal=>
-		x match {
-				case i:LineSignal => (new LineSignalDialog(i)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
-				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
-		}};
-	popupMenu.contents += new MenuItem(Action("edit"){
-		edit(signal);
-	});
-	popupMenu.contents += new MenuItem(Action("delete"){
-		SignalGraph.this.parent.delGraphLast(signal);
-	});
-	popupMenu.contents += new MenuItem(Action("add new line signal"){
-		val newsig = LineSignal(SignalGraph.this.signal.parent, "new", 0);
-		SignalGraph.this.parent.addGraphLast(newsig)
-		(new LineSignalDialog(newsig)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
-	});
-	popupMenu.contents += new MenuItem(Action("add new value signal"){
-		val newsig = ValueSignal(SignalGraph.this.signal.parent, "new", (0 to 7).toArray.map(i=>(i,false)));
-		SignalGraph.this.parent.addGraphLast(newsig)
-		(new ValueSignalDialog(newsig)).open({sig=>SignalGraph.this.parent.updateGraphLast(sig)})
-	});
-	popupMenu.contents += new MenuItem(Action("clear"){
-		parent.signals=ListBuffer();
-	});
-	peer.addMouseListener( new MouseAdapter {
-		override def mouseClicked(e: MouseEvent) {
-			if (SwingUtilities.isLeftMouseButton(e) && e.getClickCount % 2 == 0) {
-				edit(signal);
-			}
-		}
-	});
 }

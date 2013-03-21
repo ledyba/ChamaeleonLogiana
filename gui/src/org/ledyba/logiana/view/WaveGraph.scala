@@ -21,101 +21,151 @@ import scala.swing.ComboBox
 import java.awt.Dimension
 import org.ledyba.logiana.model.LineSignal
 import scala.swing.Component
+import scala.swing.event.ButtonClicked
+import scala.swing.event.MouseClicked
+import scala.swing.Graphics2D
+import java.awt.Rectangle
+import scala.swing.Panel
+import java.awt.Color
+import java.awt.BasicStroke
+import scala.swing.event.MousePressed
+import scala.swing.event.MouseEvent
+import java.awt.Font
+import java.awt.FontMetrics
 
-class WaveGraph(val fname:String) extends GridBagPanel with PopupMenuContainer {
+class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 	private val view = WaveViewer(fname);
+	private val graphs = ListBuffer[SignalGraph]();
+	private var labelWidth = 30;
+	private var graphWidth = 0;
+	font = new Font("SansSerif", Font.PLAIN, 12);
+	private val metrics = peer.getFontMetrics(font);
 	def data = Unit;
 	def data_=(newdata : WaveData):Unit = {
 		this.view.data = newdata;
-		this.updateData
 	}
 	def save() {
 		view.write(fname);
 	}
 	def downscale() = {
 		view.dotsPerNanoSec /= 2;
-		this.updateData
-		this.revalidate();
+		updateView;
 	}
 	def upscale() = {
 		view.dotsPerNanoSec *= 2;
-		this.updateData
-		this.revalidate();
+		updateView;
 	}
-	def signals = this.view.signals;
-	def signals_= (newsignals : Buffer[Signal]) {
-		this.view.signals = newsignals;
-		updateSignals;
-		this.revalidate;
-	}
-	val signalGraphs = ArrayBuffer[(Label, SignalGraph)]();
-	private def updateSignals {
-		this.peer.removeAll();
-		this.signalGraphs.clear
-		var i=0;
-		for(signal <- view.signals) {
-			val l = new Label(signal.name);
-			val c = new SignalGraph(this, signal);
-			this.add(l, (0,i))
-			this.add(c, (1,i))
-			signalGraphs += ((l,c));
-			i+=1;
+	override def paintComponent(g:Graphics2D) = {
+		super.paintComponent(g);
+		g.translate(labelWidth, 0);
+		val rect = peer.getVisibleRect().clone().asInstanceOf[Rectangle];
+		rect.x = Math.max(0, rect.x-labelWidth-50);
+		rect.width = Math.min(size.width-labelWidth, rect.width+100);
+		val vrect = new Rectangle(0,0,graphWidth, SignalGraph.kSignalViewHeight);
+		val lineEnd = Math.min(graphWidth, rect.x+rect.width);
+		for( gr <-graphs ) {
+			// draw label
+			g.setFont(font);
+			val labelHeight = metrics.getStringBounds(gr.signal.name, g).getBounds2D().getY();
+			g.drawString(gr.signal.name, (-labelWidth+2).toFloat, ((SignalGraph.kSignalViewHeight-labelHeight)/2).toFloat);
+			// draw signal
+			val inter=rect.intersection(vrect);
+			gr.paintComponent(g, inter);
+			g.setColor(Color.BLACK);
+			g.setStroke(new BasicStroke(2));
+			g.drawLine(rect.x, SignalGraph.kSignalViewHeight, lineEnd, SignalGraph.kSignalViewHeight);
+			rect.y -= SignalGraph.kSignalViewHeight+2;
+			g.translate(0, SignalGraph.kSignalViewHeight+2);
 		}
 	}
-	private def updateData {
-		for((_, sigGraph) <- this.signalGraphs) {
-			sigGraph.update
+	def updateView = {
+		labelWidth = view.signals.foldLeft(0)({(now, nextsig)=> Math.max(now, metrics.stringWidth(nextsig.name))})+3;
+		graphWidth = (this.view.data.nanosecPerEntry*this.view.data.length*this.view.dotsPerNanoSec).toInt;
+		val width=labelWidth + graphWidth;
+		val height = ((SignalGraph.kSignalViewHeight+2) * this.graphs.length);
+		preferredSize = new Dimension( width, height );
+		minimumSize = new Dimension( width, height );
+		maximumSize = new Dimension( width, height );
+		this.revalidate
+		this.repaint
+	}
+	def addSignal(sig:Signal) = {
+		this.view.signals+=sig;
+		this.graphs+=new SignalGraph(this, sig);
+		updateView;
+	}
+	def updateSignal(sig:Signal) = {
+		updateView;
+	}
+	def delSignal(sig:Signal) = {
+		val d = this.graphs.filter({ it=>it.signal == sig });
+		this.graphs --= d;
+		this.view.signals --= d.map({it => it.signal});
+		updateView;
+	}
+	def clearSignals = {
+		this.view.signals.clear;
+		this.graphs.clear;
+		updateView;
+	}
+	val edit = {x:Signal=>
+		x match {
+				case i:LineSignal => (new LineSignalDialog(i)).open({sig=>WaveGraph.this.updateSignal(sig)})
+				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>WaveGraph.this.updateSignal(sig)})
+		}};
+	popupMenu.contents += new MenuItem(Action("edit"){
+		if(lastSignal != null){
+			edit(lastSignal);
 		}
-		this.peer.revalidate();
-	}
-	def addGraphLast(x:Signal) = {
-		val i = this.signalGraphs.length;
-		val l = new Label(x.name);
-		val c = new SignalGraph(this, x);
-		this.add(l, (0,i));
-		this.add(c, (1,i))
-		this.view.signals+=x;
-		signalGraphs += ((l,c));
-		this.revalidate;
-		this.peer.getParent().revalidate();
-	}
-	def updateGraphLast(x:Signal) = {
-		for( edit <- this.signalGraphs.filter({ it=>val (l,c)=it;c.signal == x })){
-			val (l,c) = edit;
-			l.text=c.signal.name;
+	});
+	popupMenu.contents += new MenuItem("delete"){
+		reactions += {
+			case ButtonClicked(source) => {
+				if(lastSignal != null){
+					delSignal(lastSignal);
+				}
+			}
 		}
-		this.revalidate;
-		this.peer.getParent().revalidate();
-	}
-	def delGraphLast(x:Signal) = {
-		val del = this.signalGraphs.filter({ it=>val (l,c)=it;c.signal == x })
-		for( d <- del ) {
-			val (l,c) = d;
-			this.view.signals-=c.signal;
-			signalGraphs -= d;
-			this.peer.remove(l.peer);
-			this.peer.remove(c.peer);
-		}
-		this.revalidate;
-		this.peer.getParent().revalidate();
-	}
+	};
 	popupMenu.contents += new MenuItem(Action("add new line signal"){
 		val sig = LineSignal(view, "new", 0);
-		WaveGraph.this.addGraphLast(sig)
-		new LineSignalDialog(sig).open({sig=>WaveGraph.this.updateGraphLast(sig)});
+		WaveGraph.this.addSignal(sig);
+		new LineSignalDialog(sig).open({sig=>WaveGraph.this.updateSignal(sig)});
 	});
 	popupMenu.contents += new MenuItem(Action("add new value signal"){
 		val sig = ValueSignal(view, "new", (0 to 7).toArray.map(i=>(i,false)));
-		WaveGraph.this.addGraphLast(sig);
-		new ValueSignalDialog(sig).open({sig=>WaveGraph.this.updateGraphLast(sig)});
+		WaveGraph.this.addSignal(sig);
+		new ValueSignalDialog(sig).open({sig=>WaveGraph.this.updateSignal(sig)});
 	});
 	popupMenu.contents += new MenuItem(Action("clear"){
-		signals=ListBuffer();
+		WaveGraph.this.clearSignals;
 		WaveGraph.this.revalidate;
 	});
-	updateSignals;updateData;
+	this.listenTo(this.mouse.clicks);
+	var lastSignal:Signal = null;
+	this.reactions += {
+		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
+			val lastSelected = (point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
+			if(lastSelected >= 0 && lastSelected < graphs.length && clicks % 2 == 0) {
+				edit(this.view.signals(lastSelected));
+			}
+		}
+		case ev:MousePressed => {
+			if(ev.peer.getButton() == MouseEvent.BUTTON3){
+				val lastSelected = (ev.point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
+				if(lastSelected >= 0 && lastSelected < graphs.length) {
+					lastSignal = this.view.signals(lastSelected);
+				}else{
+					lastSignal = null;
+				}
+			}
+		}
+	}
+	for(sig <- this.view.signals){
+		this.graphs+=new SignalGraph(this, sig);
+	}
+	updateView;
 }
-
 
 sealed class LineSignalDialog(val sig:LineSignal) extends Dialog{
 	title="ラインシグナル";
@@ -171,7 +221,7 @@ sealed class ValueSignalDialog(val sig:ValueSignal) extends Dialog{
 			if(x.startsWith("!")){
 				(x.substring(1).toInt, true)
 			}else{
-				(x.toInt, true)
+				(x.toInt, false)
 			}
 		}
 		sig.name = nameField.text;

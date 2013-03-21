@@ -18,11 +18,20 @@ extern int DYNAPI findLogiana(void** ptr, char* err, int errlen)
 	try {
 		std::unique_ptr<Device> dev = host().find();
 		std::printf("Device searching...\n");
-		while(!dev){
-			std::printf("wait...\n");
-			sleep(1);
-			host().refresh();
-			dev = host().find();
+		{
+			int findCnt = 0;
+			while(!dev){
+				if( findCnt > 10 ){
+					std::snprintf(err, errlen, "Device not found.");
+					std::fputs(err, stderr);
+					return -1;
+				}
+				++findCnt;
+				std::printf("wait...\n");
+				sleep(1);
+				host().refresh();
+				dev = host().find();
+			}
 		}
 
 		if(dev && !dev->isLogicAnalyzer()) {
@@ -31,11 +40,20 @@ extern int DYNAPI findLogiana(void** ptr, char* err, int errlen)
 			std::printf("Device re searching...\n");
 			host().refresh();
 			dev = host().find();
-			while (!dev) {
-				std::printf("wait...\n");
-				sleep(1);
-				host().refresh();
-				dev = host().find();
+			{
+				int findCnt = 0;
+				while (!dev) {
+					std::printf("wait...\n");
+					if( findCnt > 10 ){
+						std::snprintf(err, errlen, "Failed to download firmware. Device not found.");
+						std::fputs(err, stderr);
+						return -1;
+					}
+					++findCnt;
+					sleep(1);
+					host().refresh();
+					dev = host().find();
+				}
 			}
 		}
 		if(!dev) {
