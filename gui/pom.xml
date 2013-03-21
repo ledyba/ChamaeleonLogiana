@@ -12,6 +12,17 @@
 		<pluginManagement>
 			<plugins>
 				<plugin>
+					<groupId>org.codehaus.mojo</groupId>
+					<artifactId>exec-maven-plugin</artifactId>
+					<version>1.1</version>
+					<executions><execution>
+					<goals><goal>java</goal></goals>
+					</execution></executions>
+					<configuration>
+						<mainClass>org.ledyba.logiana.LogianaMain</mainClass>
+					</configuration>
+				</plugin>
+				<plugin>
 					<groupId>org.scala-tools</groupId>
 					<artifactId>maven-scala-plugin</artifactId>
 					<executions>
