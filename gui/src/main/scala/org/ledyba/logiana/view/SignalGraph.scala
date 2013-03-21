@@ -45,6 +45,7 @@ class SignalGraph(val parent:WaveGraph, val signal:Signal) {
 					if(lastSig != sig) {
 						g.setColor(Color.RED);
 						g.drawLine(lastX, 5, lastX, SignalGraph.kSignalViewHeight-5);
+						lastSig = sig;
 					}
 					g.setColor(Color.GREEN);
 					g.drawLine(lastX, y, x, y);

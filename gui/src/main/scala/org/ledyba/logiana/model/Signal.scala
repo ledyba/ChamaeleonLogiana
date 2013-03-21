@@ -6,7 +6,7 @@ sealed abstract class Signal(val parent:WaveViewer) extends Serializable {
 }
 
 case class LineSignal(override val parent:WaveViewer, var name:String, var probeNo:Int) extends Signal(parent) with Serializable {
-	def fromWaveData(wavData:WaveData, time:Float):Boolean = {
+	def fromWaveData(wavData:WaveData, time:Double):Boolean = {
 		return wavData.signalAtTime(time, probeNo);
 	}
 	override def repr() = "LineSignal: "++name++" (probe"+probeNo+")"
@@ -14,7 +14,7 @@ case class LineSignal(override val parent:WaveViewer, var name:String, var probe
 }
 
 case class ValueSignal(override val parent:WaveViewer, var name:String, var lines:Array[(Int, Boolean)]) extends Signal(parent) with Serializable {
-	def fromWaveData(wavData:WaveData, time:Float):Int = {
+	def fromWaveData(wavData:WaveData, time:Double):Int = {
 		var idx=(-1);
 		return lines.foldLeft(0)( (sig:Int, sigData) => {
 			val (probeNo,isNegative) = sigData
