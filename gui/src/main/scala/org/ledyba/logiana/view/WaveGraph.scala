@@ -39,6 +39,7 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 	def data = Unit;
 	def data_=(newdata : WaveData):Unit = {
 		this.view.data = newdata;
+		updateView;
 	}
 	def save(filename:String=fname) {
 		view.write(filename);
