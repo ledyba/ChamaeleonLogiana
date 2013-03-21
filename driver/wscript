@@ -27,13 +27,16 @@ def enum(dirname, exclude=[], exts=['.cpp','.c']):
 	return f
 
 DRIVER_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'device')
-DRIVER_SRC=enum('src/device')
+DRIVER_SRC=enum('src/device',[], ['.cpp'])
 
 MAIN_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'main')
-MAIN_SRC=enum('src/main')
+MAIN_SRC=enum('src/main',[], ['.cpp'])
 
 DYNAMIC_DIR=os.path.join(os.path.abspath(os.path.dirname(srcdir)), 'src', 'dynamic')
-DYNAMIC_SRC=enum('src/dynamic')
+DYNAMIC_SRC=enum('src/dynamic',[], ['.cpp'])
+
+if sys.platform == 'win32':
+	DRIVER_SRC.append('libusb_dyn.c');
 
 def options(opt):
 	opt.add_option('--release', action='store_true', default=False, help='release build')
@@ -48,6 +51,9 @@ def configure(conf):
 		conf.env.append_value('CXXFLAGS', ['-ggdb','-O0', '-Wall', '-std=gnu++11', '-D__GXX_EXPERIMENTAL_CXX0X__=1','-DDEBUG'])
 
 	conf.check(features='cxx cxxprogram', header_name='usb.h', mandatory=True, uselib_store='LIBUSB')
+	
+	if sys.platform != 'win32':
+		conf.check(compiler='cxx', lib='usb', mandatory=True, uselib_store='LIBUSB')
 
 def build(bld):
 	bld(
