@@ -29,18 +29,28 @@ import scala.swing.event.InputEvent
 import java.awt.event.InputEvent
 
 class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
-	private val view = WaveViewer(fname);
+	private var view = WaveViewer(fname);
 	private val graphs = ListBuffer[SignalGraph]();
 	private var labelWidth = 30;
 	private var graphWidth = 0;
 	font = new Font("SansSerif", Font.PLAIN, 12);
 	private val metrics = peer.getFontMetrics(font);
+	var lastSignal:Int = -1;
 	def data = Unit;
 	def data_=(newdata : WaveData):Unit = {
 		this.view.data = newdata;
 	}
-	def save() {
-		view.write(fname);
+	def save(filename:String=fname) {
+		view.write(filename);
+	}
+	def load(filename:String=fname) {
+		view = WaveViewer(filename);
+		lastSignal = -1;
+		this.graphs.clear;
+		for(sig <- this.view.signals){
+			this.graphs+=new SignalGraph(this, sig);
+		}
+		updateView;
 	}
 	def downscale() = {
 		view.dotsPerNanoSec /= 2;
@@ -121,9 +131,10 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 		updateView;
 	}
 	def delSignal(sig:Signal) = {
-		val d = this.graphs.filter({ it=>it.signal == sig });
+		val d = this.graphs.filter({ it=>it.signal eq sig });
 		this.graphs --= d;
 		this.view.signals --= d.map({it => it.signal});
+		this.lastSignal = -1;
 		updateView;
 	}
 	def clearSignals = {
@@ -166,7 +177,6 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 	});
 	this.listenTo(this.mouse.clicks);
 	this.listenTo(this.mouse.moves);
-	var lastSignal:Int = -1;
 	this.reactions += {
 		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
 			val lastSelected = (point.y/(SignalGraph.kSignalViewHeight+2)).intValue();

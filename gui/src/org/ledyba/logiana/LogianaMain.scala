@@ -37,6 +37,9 @@ import org.ledyba.logiana.control.SessionRunner
 import scala.swing.GridPanel
 import scala.swing.BoxPanel
 import scala.swing.Orientation
+import scala.swing.FileChooser
+import java.io.File
+import org.ledyba.logiana.model.WaveViewer
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
@@ -76,6 +79,26 @@ object LogianaMain extends SimpleSwingApplication {
 		menuBar = new MenuBar() {
 			contents += new Menu("ファイル(F)") {
 				mnemonic = Key.F;
+				contents += new MenuItem(Action("セーブ") {
+					val x=new FileChooser(new File(".").getCanonicalFile().getParentFile());
+					x.showSaveDialog(this) match {
+						case FileChooser.Result.Approve => {
+							val fpath=x.selectedFile.getCanonicalPath();
+							waveGraph.save(fpath);
+						}
+						case _ => Unit
+					};
+				}) { mnemonic = Key.S; }
+				contents += new MenuItem(Action("ロード") {
+					val x=new FileChooser(new File(".").getCanonicalFile().getParentFile());
+					x.showOpenDialog(this) match {
+						case FileChooser.Result.Approve => {
+							val fpath=x.selectedFile.getCanonicalPath();
+							waveGraph.load(fpath);
+						}
+						case _ => Unit
+					};
+				}) { mnemonic = Key.S; }
 				contents += new MenuItem(Action("計測中止") {
 					if(session == null){
 						statusLine.text="計測が開始されていません。";
@@ -123,7 +146,7 @@ object LogianaMain extends SimpleSwingApplication {
 		}
 		override def closeOperation() {
 			conf.write(kConfigFilename);
-			waveGraph.save;
+			waveGraph.save();
 			super.closeOperation();
 		}
 		def openMeasureDialog() {

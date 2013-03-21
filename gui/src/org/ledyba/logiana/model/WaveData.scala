@@ -6,6 +6,10 @@ import scala.annotation.serializable
 import org.ledyba.logiana.control.Frequency
 import org.ledyba.logiana.control.Condition
 import org.ledyba.logiana.control.TriggerLine
+import java.io.ObjectInputStream
+import java.io.FileInputStream
+import java.io.ObjectOutputStream
+import java.io.FileOutputStream
 
 @SerialVersionUID(0x0L)
 class WaveData(sess:Session, dat : Array[Int]) extends Serializable {
@@ -24,11 +28,7 @@ class WaveData(sess:Session, dat : Array[Int]) extends Serializable {
 		case MeasureType.Last => -((HBAR_MAX*2+WAVE_MAX/2) * sess.freq.nanosec)
 		case MeasureType.Top => -((HBAR_MIN*2+24) * sess.freq.nanosec)
 	}
-	val endTime = sess.measureType match{
-		case MeasureType.Center => (timeLength/2)
-		case MeasureType.Last => 0
-		case MeasureType.Top => timeLength
-	}
+	val endTime = beginTime+timeLength
 	def timeToIndex(time : Float) = ((time-beginTime)/sess.freq.nanosec).intValue();
 	def signalAt(idx:Int, signal : Int):Boolean = {
 		val mask = (1<<signal)
