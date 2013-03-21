@@ -104,7 +104,7 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 		val end = Math.min(this.view.data.endTime, this.view.data.beginTime+((rect.x+rect.width)/dotsPerNsec));
 		val offset = -(dotsPerNsec * this.view.data.beginTime)
 		g.setColor(Color.darkGray);
-		for( l <- ( (begin/nsecPerLine).ceil.toInt to (end/nsecPerLine).toInt ) ) {
+		for( l <- ( (begin/nsecPerLine).ceil.toInt to (end/nsecPerLine).floor.toInt ) ) {
 			val t = l * nsecPerLine;
 			val x = (offset + (t * dotsPerNsec)).toInt;
 			g.drawLine(x, 0, x, preferredSize.height);
