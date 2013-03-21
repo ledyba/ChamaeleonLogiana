@@ -1,37 +1,32 @@
 package org.ledyba.logiana.view
 
-import scala.collection.mutable.ArrayBuffer
-import scala.collection.mutable.Buffer
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.Font
+import java.awt.Rectangle
+import java.awt.event.MouseEvent
+import scala.Array.canBuildFrom
+import scala.collection.mutable.ListBuffer
+import scala.swing.Action
+import scala.swing.Dialog
+import scala.swing.Graphics2D
 import scala.swing.GridBagPanel
 import scala.swing.Label
-import org.ledyba.logiana.model.Signal
-import org.ledyba.logiana.model.WaveData
-import org.ledyba.logiana.model.WaveViewer
 import scala.swing.MenuItem
-import scala.swing.Action
-import org.ledyba.logiana.model.LineSignal
-import org.ledyba.logiana.model.ValueSignal
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
-import javax.swing.SwingUtilities
-import scala.collection.mutable.ListBuffer
-import scala.swing.Dialog
+import scala.swing.Panel
 import scala.swing.TextField
-import scala.swing.ComboBox
-import java.awt.Dimension
-import org.ledyba.logiana.model.LineSignal
-import scala.swing.Component
 import scala.swing.event.ButtonClicked
 import scala.swing.event.MouseClicked
-import scala.swing.Graphics2D
-import java.awt.Rectangle
-import scala.swing.Panel
-import java.awt.Color
-import java.awt.BasicStroke
+import scala.swing.event.MouseDragged
 import scala.swing.event.MousePressed
-import scala.swing.event.MouseEvent
-import java.awt.Font
-import java.awt.FontMetrics
+import org.ledyba.logiana.model.LineSignal
+import org.ledyba.logiana.model.Signal
+import org.ledyba.logiana.model.ValueSignal
+import org.ledyba.logiana.model.WaveData
+import org.ledyba.logiana.model.WaveViewer
+import scala.swing.ComboBox
+import scala.swing.event.InputEvent
+import java.awt.event.InputEvent
 
 class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 	private val view = WaveViewer(fname);
@@ -66,6 +61,7 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 		{
 			val g2=g.create().asInstanceOf[Graphics2D];
 			try {
+				var idx = 0;
 				for( gr <-graphs ) {
 					// draw label
 					g2.setFont(font);
@@ -74,12 +70,13 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 					g2.drawString(gr.signal.name, (-labelWidth+2).toFloat, ((SignalGraph.kSignalViewHeight-labelHeight)/2).toFloat);
 					// draw signal
 					gr.paintComponent(g2, rect.intersection(vrect));
-					if( this.lastSignal == gr.signal ) {
-						g.setColor(Color.BLACK);
-						g.draw3DRect(-labelWidth, 0, preferredSize.width, SignalGraph.kSignalViewHeight, true);
+					if( lastSignal == idx ) {
+						g2.setColor(Color.BLACK);
+						g2.draw3DRect(-labelWidth, 0, preferredSize.width, SignalGraph.kSignalViewHeight, true);
 					}
 					rect.y -= SignalGraph.kSignalViewHeight+2;
 					g2.translate(0, SignalGraph.kSignalViewHeight+2);
+					idx+=1;
 				}
 			} finally {
 				g2.dispose();
@@ -140,15 +137,15 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>WaveGraph.this.updateSignal(sig)})
 		}};
 	popupMenu.contents += new MenuItem(Action("edit"){
-		if(lastSignal != null){
-			edit(lastSignal);
+		if(lastSignal >= 0){
+			edit(this.view.signals(lastSignal));
 		}
 	});
 	popupMenu.contents += new MenuItem("delete"){
 		reactions += {
 			case ButtonClicked(source) => {
 				if(lastSignal != null){
-					delSignal(lastSignal);
+					delSignal(view.signals(lastSignal));
 				}
 			}
 		}
@@ -168,7 +165,8 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 		WaveGraph.this.revalidate;
 	});
 	this.listenTo(this.mouse.clicks);
-	var lastSignal:Signal = null;
+	this.listenTo(this.mouse.moves);
+	var lastSignal:Int = -1;
 	this.reactions += {
 		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
 			val lastSelected = (point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
@@ -176,22 +174,48 @@ class WaveGraph(val fname:String) extends Panel with PopupMenuContainer {
 				if(clicks % 2 == 0){
 					edit(this.view.signals(lastSelected));
 				}else{
-					this.lastSignal = this.view.signals(lastSelected);
+					this.lastSignal = lastSelected;
 					updateView;
 				}
 			}
 		}
 		case ev:MousePressed => {
-			if(ev.peer.getButton() == MouseEvent.BUTTON3){
-				val lastSelected = (ev.point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
-				if(lastSelected >= 0 && lastSelected < graphs.length) {
-					lastSignal = this.view.signals(lastSelected);
-					updateView;
-				}else{
-					lastSignal = null;
+			val now = (ev.point.y/(SignalGraph.kSignalViewHeight+2)).intValue();
+			if(now >= 0 && now < graphs.length) {
+				this.lastSignal = now;
+				updateView;
+			}else{
+				lastSignal = -1;
+			}
+		}
+		case ev:MouseDragged => {
+			if((ev.peer.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK){
+				val now = Math.min((ev.point.y/(SignalGraph.kSignalViewHeight+2)).intValue(), graphs.length-1);
+				if(now >= 0 && now != lastSignal) {
+					swapSignal(lastSignal, now);
+					lastSignal = now;
 				}
 			}
 		}
+	}
+	def swapSignal(a:Int, b:Int){
+		val origSig = view.signals.clone;
+		val origGraph = graphs.clone;
+		view.signals.clear;
+		graphs.clear;
+		for( i<- (0 to origSig.length-1) ) {
+			if(a == i){
+				view.signals += origSig(b);
+				graphs += origGraph(b);
+			}else if(b == i){
+				view.signals += origSig(a);
+				graphs += origGraph(a);
+			}else{
+				view.signals += origSig(i);
+				graphs += origGraph(i);
+			}
+		}
+		updateView
 	}
 	for(sig <- this.view.signals){
 		this.graphs+=new SignalGraph(this, sig);
