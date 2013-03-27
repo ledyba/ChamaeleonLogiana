@@ -10,7 +10,7 @@ import com.sun.jna.NativeLibrary
 import com.sun.jna.Pointer
 import scala.collection.mutable.ArrayBuffer
 import com.sun.jna.ptr.PointerByReference
-import org.ledyba.logiana.model.WaveData
+import org.ledyba.logiana.model.MeasuredData
 
 object Logiana {
 	var instance:DynamicLib = null;
@@ -58,8 +58,8 @@ object Logiana {
 				return Left(new String(messageBuffer));
 			}
 		}
-		def startMeasuring(ptr : Pointer, sess:Session) : Either[String, Boolean] = {
-			val codes = ArrayBuffer(sess.freq.code, sess.measureType.code, sess.cond.code, sess.line.code).map(x => new java.lang.Byte(x)).toArray[Object];
+		def startMeasuring(ptr : Pointer, op:Operation) : Either[String, Boolean] = {
+			val codes = ArrayBuffer(op.freq.code, op.measureType.code, op.cond.code, op.line.code).map(x => new java.lang.Byte(x)).toArray[Object];
 	
 			val args = ArrayBuffer[Object]();
 			val messageBuffer = new Array[Byte](8192);
@@ -76,7 +76,7 @@ object Logiana {
 				return Left(new String(messageBuffer));
 			}
 		}
-		def endMeasuring(ptr : Pointer, sess:Session) : Either[String, WaveData] = {
+		def endMeasuring(ptr : Pointer, op:Operation) : Either[String, MeasuredData] = {
 			val args = ArrayBuffer[Object]();
 			val messageBuffer = new Array[Byte](8192);
 			val ramBuffer = new Array[Int](1024*32);
@@ -89,7 +89,7 @@ object Logiana {
 	
 			val ret = endMeasuring_.invokeInt(args.toArray[Object]);
 			if( ret >= 0 ){
-				return Right(new WaveData(sess, ramBuffer));
+				return Right(new MeasuredData(op, ramBuffer));
 			}else{
 				return Left(new String(messageBuffer));
 			}
@@ -113,7 +113,7 @@ object Logiana {
 	}
 	sealed class Handle(val parent:DynamicLib, val ptr : Pointer) {
 		def isMeasureing() = parent.isMeasureing(ptr);
-		def start(sess:Session) = parent.startMeasuring(ptr, sess);
-		def end(sess:Session) = parent.endMeasuring(ptr, sess);
+		def start(op:Operation) = parent.startMeasuring(ptr, op);
+		def end(op:Operation) = parent.endMeasuring(ptr, op);
 	}
 }
