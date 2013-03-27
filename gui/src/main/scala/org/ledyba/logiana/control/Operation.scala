@@ -10,12 +10,26 @@ import org.ledyba.logiana.control._
 import org.ledyba.logiana.model.MeasuredData
 import javax.swing.SwingUtilities
 import org.ledyba.logiana.Config
+import java.io.DataOutputStream
+import java.io.DataInputStream
 
-class Operation(_freq : Frequency.Value, _type:MeasureType.Value, _cond:Condition.Value, _line:TriggerLine.Value) extends Serializable{
-	val freq = _freq;
-	val measureType = _type;
-	val cond = _cond;
-	val line = _line;
+case class Operation(val freq : Frequency.Value, val measureType:MeasureType.Value, val cond:Condition.Value, val line:TriggerLine.Value) extends Serializable{
+	def write(os:DataOutputStream){
+		os.writeByte(freq.code);
+		os.writeByte(measureType.code);
+		os.writeByte(cond.code);
+		os.writeByte(line.code);
+	}
+}
+
+object Operation {
+	def apply(is:DataInputStream):Operation = {
+		val freq = Frequency.fromCode(is.readByte());
+		val mesType = MeasureType.fromCode(is.readByte());
+		val cond = Condition.fromCode(is.readByte());
+		val line = TriggerLine.fromCode(is.readByte());
+		return Operation(freq, mesType, cond, line);
+	}
 }
 
 class OperationRunner(val conf:Config, val op:Operation, val callback:(Either[String, MeasuredData]=>Unit)) extends Thread{

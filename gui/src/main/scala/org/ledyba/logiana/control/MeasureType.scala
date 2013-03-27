@@ -11,6 +11,14 @@ object MeasureType extends Enumeration {
 		val name = _name;
 		val code = _code;
 	}
+	def fromCode(code:Byte):Value = {
+		for(v <- values) {
+			if(v.asInstanceOf[Value].code == code) {
+				return v.asInstanceOf[Value];
+			}
+		}
+		return null;
+	}
 	val Top    = new Value("Top",    0)
 	val Center = new Value("Center", 1)
 	val Last   = new Value("Last",   2)

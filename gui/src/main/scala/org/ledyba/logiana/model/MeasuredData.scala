@@ -11,9 +11,12 @@ import java.io.FileInputStream
 import java.io.ObjectOutputStream
 import java.io.FileOutputStream
 import org.ledyba.logiana.control.Operation
+import java.io.DataInputStream
+import java.io.DataOutputStream
+import scala.collection.mutable.ListBuffer
 
 @SerialVersionUID(0x0L)
-class MeasuredData(op:Operation, dat : Array[Int]) extends Serializable {
+case class MeasuredData(op:Operation, dat : Array[Int]) extends Serializable {
 	def this() = {
 		this(new Operation(Frequency._100MHz, MeasureType.Center, Condition.PosEdge, TriggerLine.Probe00), Array.fill(1000)(0));
 	}
@@ -32,4 +35,23 @@ class MeasuredData(op:Operation, dat : Array[Int]) extends Serializable {
 	def signalAtTime(time : Double, signal : Int) = signalAt(timeToIndex(time), signal)
 	val length:Int = dat.length;
 	val nanosecPerEntry = op.freq.nanosec;
+	def write(os:DataOutputStream) = {
+		op.write(os);
+		os.writeInt(dat.length);
+		for(d <- dat) {
+			os.writeInt(d);
+		}
+	}
+}
+
+object MeasuredData{
+	def apply(is:DataInputStream):MeasuredData = {
+		val op = Operation(is);
+		val list = ListBuffer[Int]();
+		val len = is.readInt();
+		for(_ <- (1 to len)){
+			list += is.readInt();
+		}
+		return MeasuredData(op, list.toArray);
+	}
 }

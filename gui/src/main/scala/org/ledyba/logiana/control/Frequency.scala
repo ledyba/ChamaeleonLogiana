@@ -7,12 +7,18 @@
 package org.ledyba.logiana.control
 
 object Frequency extends Enumeration {
-	class Value(_name:String, _nanosec:Double, _code:Byte) extends Val(nextId, _name) {
+	class Value(val name:String, val nanosec:Double, val code:Byte) extends Val(nextId, name) {
 		nextId = nextId + 1;
-		val name = _name;
-		val code = _code;
-		val nanosec = _nanosec;
 		lazy val freq = 1000000000.0/this.nanosec;
+	}
+	
+	def fromCode(code:Byte):Frequency.Value = {
+		for(v <- values) {
+			if(v.asInstanceOf[Value].code == code) {
+				return v.asInstanceOf[Value];
+			}
+		}
+		return null;
 	}
 	
 	val _100MHz  = new Value("100MHz",    10.0,  0);

@@ -11,6 +11,14 @@ object TriggerLine extends Enumeration {
 		val name = _name;
 		val code = _code;
 	}
+	def fromCode(code:Byte):Value = {
+		for(v <- values) {
+			if(v.asInstanceOf[Value].code == code) {
+				return v.asInstanceOf[Value];
+			}
+		}
+		return null;
+	}
 	val Probe00 = new Value("Probe00",  0)
 	val Probe01 = new Value("Probe01",  1)
 	val Probe02 = new Value("Probe02",  2)

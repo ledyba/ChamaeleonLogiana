@@ -80,7 +80,7 @@ object LogianaMain extends SimpleSwingApplication {
 			contents += new Menu("ファイル(F)") {
 				mnemonic = Key.F;
 				contents += new MenuItem(Action("セーブ") {
-					val x=new FileChooser(new File(".").getCanonicalFile().getParentFile());
+					val x=new FileChooser(new File(".").getCanonicalFile());
 					x.showSaveDialog(this) match {
 						case FileChooser.Result.Approve => {
 							val fpath=x.selectedFile.getCanonicalPath();
@@ -90,7 +90,7 @@ object LogianaMain extends SimpleSwingApplication {
 					};
 				}) { mnemonic = Key.S; }
 				contents += new MenuItem(Action("ロード") {
-					val x=new FileChooser(new File(".").getCanonicalFile().getParentFile());
+					val x=new FileChooser(new File(".").getCanonicalFile());
 					x.showOpenDialog(this) match {
 						case FileChooser.Result.Approve => {
 							val fpath=x.selectedFile.getCanonicalPath();

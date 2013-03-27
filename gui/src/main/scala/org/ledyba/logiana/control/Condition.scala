@@ -11,6 +11,14 @@ object Condition extends Enumeration {
 		val name = _name;
 		val code = _code;
 	}
+	def fromCode(code:Byte):Value = {
+		for(v <- values) {
+			if(v.asInstanceOf[Value].code == code) {
+				return v.asInstanceOf[Value];
+			}
+		}
+		return null;
+	}
 	val PosEdge    = new Value("PosEdge", 0)
 	val NegEdge    = new Value("NegEdge", 1)
 	val High       = new Value("High",    2)
