@@ -1,3 +1,5 @@
 *.class
 target/
 .cache
+last.bin
+conf.bin
