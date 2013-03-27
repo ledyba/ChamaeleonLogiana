@@ -60,6 +60,7 @@ object LogianaMain extends SimpleSwingApplication {
 					case Right(wavedata) => {
 						statusLine.text="計測が正常に終了しました。";
 						waveGraph.data=wavedata;
+						waveGraph.updateView;
 						session = null;
 					}
 				}

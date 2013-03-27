@@ -1,17 +1,18 @@
 package org.ledyba.logiana
 
+import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
 import java.io.ObjectInputStream
 import java.io.ObjectOutputStream
+
+import scala.swing.Action
+import scala.swing.Button
 import scala.swing.Dialog
+import scala.swing.FileChooser
 import scala.swing.GridBagPanel
 import scala.swing.Label
 import scala.swing.TextField
-import scala.swing.Button
-import scala.swing.Action
-import scala.swing.FileChooser
-import java.io.File
 
 sealed class Config extends Serializable {
 	var dynamic = "driver";
