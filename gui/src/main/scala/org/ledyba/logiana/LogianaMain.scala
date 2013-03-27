@@ -40,6 +40,7 @@ import scala.swing.FileChooser
 import java.io.File
 import org.ledyba.logiana.model.DataProjection
 import org.ledyba.logiana.control.Operation
+import javax.swing.filechooser.FileNameExtensionFilter
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
@@ -81,20 +82,30 @@ object LogianaMain extends SimpleSwingApplication {
 				mnemonic = Key.F;
 				contents += new MenuItem(Action("セーブ") {
 					val x=new FileChooser(new File(".").getCanonicalFile());
+					x.fileFilter = new FileNameExtensionFilter("Logiana Measure Data", "mes");
 					x.showSaveDialog(this) match {
 						case FileChooser.Result.Approve => {
 							val fpath=x.selectedFile.getCanonicalPath();
-							dataPanel.save(fpath);
+							if(fpath.endsWith(".mes")){
+								dataPanel.save(fpath);
+							}else{
+								dataPanel.save(fpath+".mes");
+							}
 						}
 						case _ => Unit
 					};
 				}) { mnemonic = Key.S; }
 				contents += new MenuItem(Action("ロード") {
 					val x=new FileChooser(new File(".").getCanonicalFile());
+					x.fileFilter = new FileNameExtensionFilter("Logiana Measure Data", "mes");
 					x.showOpenDialog(this) match {
 						case FileChooser.Result.Approve => {
 							val fpath=x.selectedFile.getCanonicalPath();
-							dataPanel.load(fpath);
+							if(fpath.endsWith(".mes")){
+								dataPanel.load(fpath);
+							}else{
+								dataPanel.load(fpath+".mes");
+							}
 						}
 						case _ => Unit
 					};
