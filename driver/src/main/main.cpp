@@ -14,35 +14,64 @@
 using namespace logiana;
 
 int main() {
+	std::unique_ptr<Device> dev = host().find();
 	try {
-		std::unique_ptr<Device> dev = host().find();
-		while(!dev){
-			std::printf("Device searching...\n");
-			sleep(1);
-			host().refresh();
-			dev = host().find();
-		}
-
-		if(dev && !dev->isLogicAnalyzer()) {
-			dev->download();
-			dev.reset();
-			while (!dev) {
+		std::printf("Device searching...\n");
+		{
+			int findCnt = 0;
+			while(!dev){
+				if( findCnt > 10 ){
+					std::fprintf(stderr, "Device not found.");
+					return -1;
+				}
+				++findCnt;
+				std::printf("wait...\n");
 				sleep(1);
 				host().refresh();
 				dev = host().find();
 			}
 		}
+
+		if(dev && !dev->isLogicAnalyzer()) {
+			dev->download();
+			dev.reset();
+			sleep(3);
+			std::printf("Device re searching...\n");
+			host().refresh();
+			dev = host().find();
+			{
+				int findCnt = 0;
+				while (!dev) {
+					std::printf("wait...\n");
+					if( findCnt > 10 ){
+						std::fprintf(stderr, "Failed to download firmware. Device not found.");
+						return -1;
+					}
+					++findCnt;
+					sleep(1);
+					host().refresh();
+					dev = host().find();
+				}
+			}
+		}
 		if(!dev) {
-			std::fprintf(stderr, "EzUSB device is not found.\n");
+			std::fprintf(stderr, "EzUSB device is not found.");
 			return -1;
 		} else if(!dev->isLogicAnalyzer()) {
-			std::fprintf(stderr, "Failed to open EzUSB device.\n");
+			std::fprintf(stderr, "Failed to open EzUSB device.");
 			return -1;
 		} else {
+			dev->bootLogicAnalyzer();
 			std::printf("load device: %p\n", dev.get());
 		}
-		dev->bootLogicAnalyzer();
-
+	}catch(std::exception& e) {
+		std::fprintf(stderr, "Failed to open EzUSB device: %s", e.what());
+		return -1;
+	} catch(...) {
+		std::fprintf(stderr, "Caught unknown exception during finding logiana.");
+		return -1;
+	}
+	try {
 		std::printf("Starting...");
 		std::fflush(stdout);
 		dev->startMeasuring(Session(Frequency::_100MHz, MeasureType::_TOP, Condition::_PosEdge, TriggerLine::_Probe00));

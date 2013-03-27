@@ -12,6 +12,9 @@ OPT +=
 all:
 	CXX=g++ CC=gcc $(PYTHON) $(WAF) build
 
+config:
+	CXX=g++ CC=gcc $(PYTHON) $(WAF) configure
+
 install:
 	$(PYTHON) $(WAF) $(OPT) install
 
@@ -27,3 +30,4 @@ distclean:
 	rm -f .lock*
 	rm -rf .waf-*
 	rm -rf waf-*
+
