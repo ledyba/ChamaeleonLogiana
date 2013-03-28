@@ -10,7 +10,7 @@
 依存するソフトウェア
 ================
 
- *ドライバはlibusbに依存しています。
+ * ドライバはlibusbに依存しています。
  ** [libusb](http://www.libusb.org/)
  * [libusb-win32](http://sourceforge.net/apps/trac/libusb-win32/wiki)
  * GUIフロントエンドはJavaを用いています。予めインストールしておいてください。
