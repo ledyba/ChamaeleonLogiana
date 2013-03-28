@@ -55,13 +55,6 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		sigPanel.scrollTo(x, y, maxX, maxY);
 		labelPanel.scrollTo(x, y, maxX, maxY);
 	}
-	def syncScroll() = {
-		SwingUtilities.invokeLater(new Runnable() {
-			def run() {
-				scrollTo(scrollX.peer.getValue(),scrollY.peer.getValue());
-			}
-		});
-	}
 
 	def save(fname:String){
 		proj.write(fname)
@@ -101,12 +94,13 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 	def scaleDown() = {
 		proj.dotsPerNanoSec /= 2;
 		sigPanel.notifyDataChanged();
-		syncScroll;
+		scrollX.peer.setValue(scrollX.peer.getValue());
 	}
 	def scaleUp() = {
 		proj.dotsPerNanoSec *= 2;
 		sigPanel.notifyDataChanged();
-		syncScroll;
+		val width = ((maxX:Long) * size.width / sigPanel.preferredSize.width).toInt;
+		scrollX.peer.setValue(scrollX.peer.getValue() - width);
 	}
 	def addSignal(sig:Signal) = {
 		proj.signals+=sig;
