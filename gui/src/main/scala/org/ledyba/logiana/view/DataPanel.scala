@@ -31,6 +31,7 @@ import javax.swing.JViewport
 import java.awt.Point
 import scala.swing.event.MouseWheelMoved
 import scala.swing.ScrollBar
+import javax.swing.SwingUtilities
 
 object DataPanel {
 	val kItemHeight = 30;
@@ -55,7 +56,11 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		labelPanel.scrollTo(x, y, maxX, maxY);
 	}
 	def syncScroll() = {
-		scrollTo(scrollX.peer.getValue(),scrollY.peer.getValue());
+		SwingUtilities.invokeLater(new Runnable() {
+			def run() {
+				scrollTo(scrollX.peer.getValue(),scrollY.peer.getValue());
+			}
+		});
 	}
 
 	def save(fname:String){
