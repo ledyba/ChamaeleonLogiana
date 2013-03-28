@@ -29,12 +29,14 @@ import scala.swing.Label
 import scala.swing.ComboBox
 import javax.swing.JViewport
 import java.awt.Point
+import scala.swing.event.MouseWheelMoved
+import scala.swing.ScrollBar
 
 object DataPanel {
 	val kItemHeight = 30;
 	val kItemMargin = 2;
 }
-class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
+class DataPanel(filename:String, private val scrollX:ScrollBar, private val scrollY:ScrollBar) extends GridBagPanel with PopupMenuContainer {
 	
 	private val labelPanel = new LabelPanel(DataPanel.this);
 	private val sigPanel = new SignalPanel(DataPanel.this);
@@ -45,9 +47,12 @@ class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
 	sigPanel.notifyDataChanged();
 	labelPanel.notifyDataChanged();
 	
-	def scrollTo(x:Int,y:Int, xMax:Int, yMax:Int){
-		sigPanel.scrollTo(x, y, xMax, yMax);
-		labelPanel.scrollTo(x, y, xMax, yMax);
+	private val maxX = scrollX.peer.getMaximum()-scrollX.peer.getVisibleAmount();
+	private val maxY = scrollY.peer.getMaximum()-scrollY.peer.getVisibleAmount();
+	
+	def scrollTo(x:Int,y:Int){
+		sigPanel.scrollTo(x, y, maxX, maxY);
+		labelPanel.scrollTo(x, y, maxX, maxY);
 	}
 
 	def save(fname:String){
@@ -154,6 +159,7 @@ class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
 	});
 	this.listenTo(this.mouse.clicks);
 	this.listenTo(this.mouse.moves);
+	this.listenTo(this.mouse.wheel);
 	this.reactions += {
 		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
 			val lastSelected = (point.y/(DataPanel.kItemHeight+DataPanel.kItemMargin)).intValue();
@@ -183,6 +189,11 @@ class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
 					selectedIdx = now;
 				}
 			}
+		}
+		case ev:MouseWheelMoved => {
+			val rot = ev.rotation;
+			val fact = maxX * 50/sigPanel.inner.preferredSize.width;
+			scrollX.peer.setValue(rot * fact + (scrollX.peer.getValue()));
 		}
 	}
 }

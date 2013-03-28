@@ -52,14 +52,13 @@ object LogianaMain extends SimpleSwingApplication {
 	val kLastFilename="./last.bin"
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
-	val dataPanel = new DataPanel(kLastFilename);
 	
 	val scrollX = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Horizontal; };
 	scrollX.peer.addAdjustmentListener(new AdjustmentListener{
 		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
 			val x = e.getValue();
 			val y = scrollY.peer.getValue();
-			dataPanel.scrollTo(x,y, maxX, maxY);
+			dataPanel.scrollTo(x,y);
 		}
 	});
 	val scrollY = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Vertical; };
@@ -67,11 +66,10 @@ object LogianaMain extends SimpleSwingApplication {
 		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
 			val x = scrollX.peer.getValue();
 			val y = e.getValue();
-			dataPanel.scrollTo(x,y, maxX, maxY);
+			dataPanel.scrollTo(x,y);
 		}
 	});
-	private val maxX = scrollX.peer.getMaximum()-scrollX.peer.getVisibleAmount();
-	private val maxY = scrollY.peer.getMaximum()-scrollY.peer.getVisibleAmount();
+	val dataPanel = new DataPanel(kLastFilename, scrollX, scrollY);
 	private var opRunner:OperationRunner = null;
 	val conf = Config(kConfigFilename);
 	def start( op : Operation ) {
