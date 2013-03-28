@@ -60,6 +60,7 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		val amx = size.width;
 		val amy = size.height;
 		scrollX.peer.setUnitIncrement(width/40);
+		scrollX.peer.setBlockIncrement(width/40);
 		scrollX.peer.setValues(scrollX.peer.getValue(), amx, 0, width);
 		scrollY.peer.setValues(scrollY.peer.getValue(), amy, 0, height);
 	};
