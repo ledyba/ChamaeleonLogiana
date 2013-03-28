@@ -61,13 +61,24 @@ class OperationRunner(val conf:Config, val op:Operation, val callback:(Either[St
 		) yield dat;
 
 	override def run() {
-		val r = Logiana(conf.dynamic).withLogiana((hnd:Logiana.Handle) => OperationRunner.this.measure(hnd))
-		SwingUtilities.invokeLater(
-			new Runnable(){
-				override def run(){
-					callback(r);
+		try {
+			val r = Logiana(conf.dynamic).withLogiana((hnd:Logiana.Handle) => OperationRunner.this.measure(hnd))
+			SwingUtilities.invokeLater(
+				new Runnable(){
+					override def run(){
+						callback(r);
+					}
 				}
+			);
+		} catch {
+		case e:Throwable => {
+				SwingUtilities.invokeLater(new Runnable(){
+					override def run(){
+						callback(Left(e.getMessage()));
+					}
+				}
+			);
 			}
-		);
+		}
 	}
 }
