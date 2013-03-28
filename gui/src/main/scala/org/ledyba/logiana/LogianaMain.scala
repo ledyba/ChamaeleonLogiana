@@ -53,7 +53,7 @@ object LogianaMain extends SimpleSwingApplication {
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	
-	val scrollX = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Horizontal; };
+	val scrollX = new ScrollBar() { maximum = Int.MaxValue; minimum=0; orientation=Orientation.Horizontal; };
 	scrollX.peer.addAdjustmentListener(new AdjustmentListener{
 		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
 			val x = e.getValue();
@@ -61,7 +61,7 @@ object LogianaMain extends SimpleSwingApplication {
 			dataPanel.scrollTo(x,y);
 		}
 	});
-	val scrollY = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Vertical; };
+	val scrollY = new ScrollBar() { maximum = 40; orientation=Orientation.Vertical; };
 	scrollY.peer.addAdjustmentListener(new AdjustmentListener{
 		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
 			val x = scrollX.peer.getValue();

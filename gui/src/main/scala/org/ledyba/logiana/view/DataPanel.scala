@@ -202,8 +202,8 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		}
 		case ev:MouseWheelMoved => {
 			val rot = ev.rotation;
-			val fact = maxX * 50/sigPanel.inner.preferredSize.width;
-			scrollX.peer.setValue(rot * fact + (scrollX.peer.getValue()));
+			val fact = (maxX:Long) * 50/sigPanel.inner.preferredSize.width;
+			scrollX.peer.setValue((rot * fact).toInt + (scrollX.peer.getValue()));
 		}
 	}
 }
@@ -256,7 +256,8 @@ sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
 		val pos = new Point;
-		pos.x = Math.max(0,((inner.preferredSize.width-this.size.width) * x)/xMax);
+		val leftX:Long = inner.preferredSize.width-this.size.width;
+		pos.x = Math.max(0,((leftX * x)/xMax).toInt);
 		pos.y = Math.max(0,((inner.preferredSize.height-this.size.height) * y)/yMax);
 		peer.setViewPosition(pos);
 	}
