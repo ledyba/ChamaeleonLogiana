@@ -11,8 +11,8 @@
 ================
 
  * ドライバはlibusbに依存しています。
- ** [libusb](http://www.libusb.org/)
- * [libusb-win32](http://sourceforge.net/apps/trac/libusb-win32/wiki)
+  * [libusb](http://www.libusb.org/)
+  * [libusb-win32](http://sourceforge.net/apps/trac/libusb-win32/wiki)
  * GUIフロントエンドはJavaを用いています。予めインストールしておいてください。
- ** ビルドにはMavenが必要です。
+  * ビルドにはMavenが必要です。
 
