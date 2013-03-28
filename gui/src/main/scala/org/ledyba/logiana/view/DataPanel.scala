@@ -32,6 +32,10 @@ import java.awt.Point
 import scala.swing.event.MouseWheelMoved
 import scala.swing.ScrollBar
 import javax.swing.SwingUtilities
+import java.awt.event.AdjustmentListener
+import java.awt.event.AdjustmentEvent
+import java.awt.event.ComponentListener
+import java.awt.event.ComponentEvent
 
 object DataPanel {
 	val kItemHeight = 30;
@@ -48,12 +52,27 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 	sigPanel.notifyDataChanged();
 	labelPanel.notifyDataChanged();
 	
-	private val maxX = scrollX.peer.getMaximum()-scrollX.peer.getVisibleAmount();
-	private val maxY = scrollY.peer.getMaximum()-scrollY.peer.getVisibleAmount();
+	private def maxX = scrollX.peer.getMaximum()-scrollX.peer.getVisibleAmount();
+	private def maxY = scrollY.peer.getMaximum()-scrollY.peer.getVisibleAmount();
+	private def updateScroll = {
+		val width = sigPanel.inner.preferredSize.width;
+		val height = sigPanel.inner.preferredSize.height;
+		val amx = size.width;
+		val amy = size.height;
+		scrollX.peer.setUnitIncrement(width/40);
+		scrollX.peer.setValues(scrollX.peer.getValue(), amx, 0, width);
+		scrollY.peer.setValues(scrollY.peer.getValue(), amy, 0, height);
+	};
 	
+	peer.addComponentListener(new ComponentListener{
+		override def componentHidden(e:ComponentEvent) = Unit
+		override def componentMoved(e:ComponentEvent) = Unit
+		override def componentResized(e:ComponentEvent) = updateScroll
+		override def componentShown(e:ComponentEvent) = updateScroll
+	});
 	def scrollTo(x:Int,y:Int){
-		sigPanel.scrollTo(x, y, maxX, maxY);
-		labelPanel.scrollTo(x, y, maxX, maxY);
+		sigPanel.scrollTo(x, y);
+		labelPanel.scrollTo(x, y);
 	}
 
 	def save(fname:String){
@@ -94,13 +113,14 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 	def scaleDown() = {
 		proj.dotsPerNanoSec /= 2;
 		sigPanel.notifyDataChanged();
-		scrollX.peer.setValue(scrollX.peer.getValue());
+		updateScroll;
+		scrollX.peer.setValue(scrollX.peer.getValue()/2);
 	}
 	def scaleUp() = {
 		proj.dotsPerNanoSec *= 2;
 		sigPanel.notifyDataChanged();
-		val width = ((maxX:Long) * size.width / sigPanel.preferredSize.width).toInt;
-		scrollX.peer.setValue(scrollX.peer.getValue() - width);
+		updateScroll;
+		scrollX.peer.setValue(scrollX.peer.getValue()*2);
 	}
 	def addSignal(sig:Signal) = {
 		proj.signals+=sig;
@@ -197,17 +217,29 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		case ev:MouseWheelMoved => {
 			val rot = ev.rotation;
 			val fact = (maxX:Long) * 50/sigPanel.inner.preferredSize.width;
-			scrollX.peer.setValue((rot * fact).toInt + (scrollX.peer.getValue()));
+			val next:Long = scrollX.peer.getValue() + rot * fact;
+			scrollX.peer.setValue(Math.min(maxX, next).toInt);
 		}
 	}
+	scrollX.peer.addAdjustmentListener(new AdjustmentListener{
+		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
+			val x = e.getValue();
+			val y = scrollY.peer.getValue();
+			scrollTo(x,y);
+		}
+	});
+	scrollY.peer.addAdjustmentListener(new AdjustmentListener{
+		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
+			val x = scrollX.peer.getValue();
+			val y = e.getValue();
+			scrollTo(x,y);
+		}
+	});
 }
 sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 	private val metrics = peer.getFontMetrics(font);
-	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
-		val pos = new Point;
-		pos.x = 0;
-		pos.y = Math.max(0, ((inner.preferredSize.height-this.size.height) * y)/yMax);
-		peer.setViewPosition(pos);
+	def scrollTo(x:Int, y:Int){
+		peer.setViewPosition(new Point(0,y));
 	}
 	def notifyDataChanged(){
 		val sigs = parent.proj.signals;
@@ -248,12 +280,8 @@ sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 	this.peer.setView(inner.peer);
 }
 sealed class SignalPanel(val parent:DataPanel) extends Viewport {
-	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
-		val pos = new Point;
-		val leftX:Long = inner.preferredSize.width-this.size.width;
-		pos.x = Math.max(0,((leftX * x)/xMax).toInt);
-		pos.y = Math.max(0,((inner.preferredSize.height-this.size.height) * y)/yMax);
-		peer.setViewPosition(pos);
+	def scrollTo(x:Int, y:Int){
+		peer.setViewPosition(new Point(x,y));
 	}
 	def notifyDataChanged(){
 		val sigs = parent.proj.signals;

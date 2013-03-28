@@ -6,46 +6,39 @@
  */
 package org.ledyba.logiana
 
-import scala.swing.{ SimpleSwingApplication, MainFrame, Dimension }
+import java.awt.event.AdjustmentEvent
+import java.awt.event.AdjustmentListener
+import java.io.File
+
+import scala.swing.Action
+import scala.swing.Alignment
+import scala.swing.BorderPanel
+import scala.swing.BoxPanel
+import scala.swing.Button
+import scala.swing.ComboBox
 import scala.swing.Dialog
+import scala.swing.Dimension
+import scala.swing.FileChooser
 import scala.swing.GridBagPanel
 import scala.swing.Label
+import scala.swing.MainFrame
 import scala.swing.Menu
 import scala.swing.MenuBar
 import scala.swing.MenuItem
-import scala.swing.Action
+import scala.swing.Orientation
+import scala.swing.ScrollBar
+import scala.swing.SimpleSwingApplication
 import scala.swing.event.Key
-import scala.swing.BorderPanel
-import scala.swing.Alignment
-import java.awt.Color
-import scala.swing.ComboBox
+
+import org.ledyba.logiana.control.Condition
 import org.ledyba.logiana.control.Frequency
 import org.ledyba.logiana.control.MeasureType
-import scala.swing.Button
-import org.ledyba.logiana.control.Condition
-import org.ledyba.logiana.control.TriggerLine
-import org.ledyba.logiana.view.PopupMenuContainer
-import org.ledyba.logiana.view.DataPanel
-import scala.swing.ScrollPane
-import javax.swing.SwingWorker
-import org.ledyba.logiana.model.MeasuredData
-import org.ledyba.logiana.control.Logiana
-import java.util.concurrent.atomic.AtomicBoolean
-import org.ledyba.logiana.control.OperationRunner
-import org.ledyba.logiana.control.OperationRunner
-import scala.swing.GridPanel
-import scala.swing.BoxPanel
-import scala.swing.Orientation
-import scala.swing.FileChooser
-import java.io.File
-import org.ledyba.logiana.model.DataProjection
 import org.ledyba.logiana.control.Operation
+import org.ledyba.logiana.control.OperationRunner
+import org.ledyba.logiana.control.TriggerLine
+import org.ledyba.logiana.view.DataPanel
+
 import javax.swing.filechooser.FileNameExtensionFilter
-import scala.swing.ScrollBar
-import scala.swing.Adjustable
-import java.awt.Adjustable
-import java.awt.event.AdjustmentListener
-import java.awt.event.AdjustmentEvent
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
@@ -53,22 +46,8 @@ object LogianaMain extends SimpleSwingApplication {
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	
-	val scrollX = new ScrollBar() { maximum = Int.MaxValue; minimum=0; orientation=Orientation.Horizontal; };
-	scrollX.peer.addAdjustmentListener(new AdjustmentListener{
-		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
-			val x = e.getValue();
-			val y = scrollY.peer.getValue();
-			dataPanel.scrollTo(x,y);
-		}
-	});
-	val scrollY = new ScrollBar() { maximum = 40; orientation=Orientation.Vertical; };
-	scrollY.peer.addAdjustmentListener(new AdjustmentListener{
-		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
-			val x = scrollX.peer.getValue();
-			val y = e.getValue();
-			dataPanel.scrollTo(x,y);
-		}
-	});
+	val scrollX = new ScrollBar() { minimum=0; orientation=Orientation.Horizontal; };
+	val scrollY = new ScrollBar() { minimum=0; orientation=Orientation.Vertical; };
 	val dataPanel = new DataPanel(kLastFilename, scrollX, scrollY);
 	private var opRunner:OperationRunner = null;
 	val conf = Config(kConfigFilename);
