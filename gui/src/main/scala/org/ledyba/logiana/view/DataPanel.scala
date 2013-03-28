@@ -54,6 +54,9 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		sigPanel.scrollTo(x, y, maxX, maxY);
 		labelPanel.scrollTo(x, y, maxX, maxY);
 	}
+	def syncScroll() = {
+		scrollTo(scrollX.peer.getValue(),scrollY.peer.getValue());
+	}
 
 	def save(fname:String){
 		proj.write(fname)
@@ -91,12 +94,14 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		revalidate();
 	}
 	def scaleDown() = {
-		proj.dotsPerNanoSec *= 2;
-		sigPanel.notifyDataChanged();
-	}
-	def scaleUp() = {
 		proj.dotsPerNanoSec /= 2;
 		sigPanel.notifyDataChanged();
+		syncScroll;
+	}
+	def scaleUp() = {
+		proj.dotsPerNanoSec *= 2;
+		sigPanel.notifyDataChanged();
+		syncScroll;
 	}
 	def addSignal(sig:Signal) = {
 		proj.signals+=sig;
@@ -202,7 +207,7 @@ sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
 		val pos = new Point;
 		pos.x = 0;
-		pos.y = ((inner.size.height-this.size.height) * y)/yMax;
+		pos.y = Math.max(0, ((inner.preferredSize.height-this.size.height) * y)/yMax);
 		peer.setViewPosition(pos);
 	}
 	def notifyDataChanged(){
@@ -246,8 +251,8 @@ sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
 		val pos = new Point;
-		pos.x = ((inner.size.width-this.size.width) * x)/xMax;
-		pos.y = ((inner.size.height-this.size.height) * y)/yMax;
+		pos.x = Math.max(0,((inner.preferredSize.width-this.size.width) * x)/xMax);
+		pos.y = Math.max(0,((inner.preferredSize.height-this.size.height) * y)/yMax);
 		peer.setViewPosition(pos);
 	}
 	def notifyDataChanged(){
@@ -298,7 +303,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 				val t = l * nsecPerLine;
 				val x = (offset + (t * dotsPerNsec)).toInt;
 				g.drawLine(x, 0, x, preferredSize.height);
-				g.drawString("%.1fnsec".format(t.toFloat), x, 10);
+				g.drawString("%.1fnsec".format(t.toFloat), x+3, 10);
 			}
 		}
 	};
