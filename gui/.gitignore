@@ -1,5 +1,5 @@
 *.class
 target/
 .cache
-last.bin
+last.mes
 conf.bin
