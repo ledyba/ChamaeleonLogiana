@@ -49,7 +49,7 @@ import java.awt.event.AdjustmentEvent
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
-	val kLastFilename="./last.bin"
+	val kLastFilename="./last.mes"
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	
@@ -217,16 +217,6 @@ object LogianaMain extends SimpleSwingApplication {
 			val line = lineDlg.selection.item.asInstanceOf[TriggerLine.Value];
 			LogianaMain.start( new Operation(freq, mes, cond, line) );
 			this.close;
-		}
-	}
-	object VersionDialog extends Dialog {
-		this.peer.setLocationByPlatform(true);
-		title = "About";
-		contents = new GridBagPanel {
-			layout += new Label("ロジックアナライザ・ウォッチャー") -> new Constraints { gridx=0;gridy=0;weightx=1.0f; }
-			layout += new Label("(C) 2013 PSI") { horizontalAlignment=Alignment.Left; verticalAlignment=Alignment.Top; } -> new Constraints { gridx=0;gridy=1;weightx=1;fill=GridBagPanel.Fill.Both; }
-
-			layout += new Button(Action("閉じる") { VersionDialog.close(); }) -> new Constraints{gridx=0;gridy=100;weightx=1; gridwidth=2; fill=GridBagPanel.Fill.Horizontal}
 		}
 	}
 }
