@@ -209,7 +209,7 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		case ev:MouseDragged => {
 			if((ev.peer.getModifiers() & InputEvent.BUTTON1_MASK) == InputEvent.BUTTON1_MASK){
 				val now = Math.min((ev.point.y/(DataPanel.kItemHeight+DataPanel.kItemMargin)).intValue(), proj.signals.length-1);
-				if(now >= 0 && now != selectedIdx) {
+				if(now >= 0 && now != selectedIdx && selectedIdx >= 0) {
 					swapSignal(selectedIdx, now);
 					selectedIdx = now;
 				}
