@@ -41,6 +41,11 @@ import java.io.File
 import org.ledyba.logiana.model.DataProjection
 import org.ledyba.logiana.control.Operation
 import javax.swing.filechooser.FileNameExtensionFilter
+import scala.swing.ScrollBar
+import scala.swing.Adjustable
+import java.awt.Adjustable
+import java.awt.event.AdjustmentListener
+import java.awt.event.AdjustmentEvent
 
 object LogianaMain extends SimpleSwingApplication {
 	val kConfigFilename = "./conf.bin";
@@ -48,6 +53,25 @@ object LogianaMain extends SimpleSwingApplication {
 	
 	val statusLine = new Label("status") { horizontalAlignment=Alignment.Left };
 	val dataPanel = new DataPanel(kLastFilename);
+	
+	val scrollX = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Horizontal; };
+	scrollX.peer.addAdjustmentListener(new AdjustmentListener{
+		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
+			val x = e.getValue();
+			val y = scrollY.peer.getValue();
+			dataPanel.scrollTo(x,y, maxX, maxY);
+		}
+	});
+	val scrollY = new ScrollBar() { maximum = 1000; minimum=0; orientation=Orientation.Vertical; };
+	scrollY.peer.addAdjustmentListener(new AdjustmentListener{
+		override def  adjustmentValueChanged(e:AdjustmentEvent):Unit = {
+			val x = scrollX.peer.getValue();
+			val y = e.getValue();
+			dataPanel.scrollTo(x,y, maxX, maxY);
+		}
+	});
+	private val maxX = scrollX.peer.getMaximum()-scrollX.peer.getVisibleAmount();
+	private val maxY = scrollY.peer.getMaximum()-scrollY.peer.getVisibleAmount();
 	private var opRunner:OperationRunner = null;
 	val conf = Config(kConfigFilename);
 	def start( op : Operation ) {
@@ -140,11 +164,7 @@ object LogianaMain extends SimpleSwingApplication {
 		contents = new BorderPanel {
 			add(statusLine, BorderPanel.Position.South);
 			add(new GridBagPanel(){
-				this.add(new ScrollPane(){
-					verticalScrollBarPolicy = ScrollPane.BarPolicy.Always;
-					horizontalScrollBarPolicy = ScrollPane.BarPolicy.Always;
-					viewportView = dataPanel;
-				}, new Constraints(){gridx=0;gridy=0;weightx=1;weighty=1;fill=GridBagPanel.Fill.Both});
+				this.add(dataPanel, new Constraints(){gridx=0;gridy=0;weightx=1;weighty=1;fill=GridBagPanel.Fill.Both});
 				this.add(new BoxPanel(Orientation.Horizontal){
 					this.contents+=new Button(Action("+"){
 						dataPanel.scaleUp;
@@ -152,7 +172,9 @@ object LogianaMain extends SimpleSwingApplication {
 					this.contents+=new Button(Action("-"){
 						dataPanel.scaleDown;
 					});
-				}, new Constraints(){gridx=0;gridy=1;weightx=1;fill=GridBagPanel.Fill.Horizontal});
+				}, new Constraints(){gridx=0;gridy=2;weightx=1;fill=GridBagPanel.Fill.Horizontal});
+				this.add(scrollX, new Constraints(){gridx=0;gridy=1;weightx=0;weighty=0;fill=GridBagPanel.Fill.Both; gridwidth=1;});
+				this.add(scrollY, new Constraints(){gridx=1;gridy=0;weightx=0;weighty=0;fill=GridBagPanel.Fill.Both; gridheight=1;});
 			}, BorderPanel.Position.Center)
 		}
 		override def closeOperation() {

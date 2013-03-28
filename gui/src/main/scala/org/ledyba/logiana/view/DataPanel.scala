@@ -27,6 +27,8 @@ import scala.swing.Dialog
 import scala.swing.TextField
 import scala.swing.Label
 import scala.swing.ComboBox
+import javax.swing.JViewport
+import java.awt.Point
 
 object DataPanel {
 	val kItemHeight = 30;
@@ -42,6 +44,11 @@ class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
 	add(sigPanel, new Constraints{ gridx=1;gridy=0;weightx=1;weighty=1.0f;fill=GridBagPanel.Fill.Both; });
 	sigPanel.notifyDataChanged();
 	labelPanel.notifyDataChanged();
+	
+	def scrollTo(x:Int,y:Int, xMax:Int, yMax:Int){
+		sigPanel.scrollTo(x, y, xMax, yMax);
+		labelPanel.scrollTo(x, y, xMax, yMax);
+	}
 
 	def save(fname:String){
 		proj.write(fname)
@@ -179,88 +186,111 @@ class DataPanel(filename:String) extends GridBagPanel with PopupMenuContainer {
 		}
 	}
 }
-sealed class LabelPanel(val parent:DataPanel) extends Panel {
+sealed class LabelPanel(val parent:DataPanel) extends Viewport {
 	private val metrics = peer.getFontMetrics(font);
+	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
+		val pos = new Point;
+		pos.x = 0;
+		pos.y = ((inner.size.height-this.size.height) * y)/yMax;
+		peer.setViewPosition(pos);
+	}
 	def notifyDataChanged(){
 		val sigs = parent.proj.signals;
 		val width = sigs.foldLeft(0)({(now, nextsig)=> Math.max(now, metrics.stringWidth(nextsig.name))})+3;
 		val height = (DataPanel.kItemHeight+DataPanel.kItemMargin)*sigs.length - DataPanel.kItemMargin;
 		preferredSize = new Dimension( width, height );
-		minimumSize = preferredSize;
-		maximumSize = preferredSize;
+		minimumSize = new Dimension(width, 0);
+		maximumSize = new Dimension(width, height);
+		inner.preferredSize = preferredSize;
+		inner.minimumSize = preferredSize;
+		inner.maximumSize = preferredSize;
 		this.revalidate
 		this.repaint
 	}
-	override def paintComponent(g:Graphics2D) = {
-		super.paintComponent(g);
-		var idx = 0;
-		g.setStroke(new BasicStroke(2));
-		for( sig <- parent.proj.signals ) {
-			val name = sig.name;
-			val height = metrics.getStringBounds(name, g).getBounds2D().getY();
-			val off = (DataPanel.kItemHeight+DataPanel.kItemMargin)*idx;
-			g.setColor(Color.BLACK);
-			g.drawString(
-					sig.name,
-					1.5f,
-					(off+(DataPanel.kItemHeight+(height/2))).toFloat);
-			if(idx != 0){
-				g.setColor(Color.lightGray);
-				val rect = peer.getVisibleRect();
-				g.drawLine(rect.x, off, rect.x+rect.width, off);
+	val inner = new Panel {
+		override def paintComponent(g:Graphics2D) = {
+			super.paintComponent(g);
+			var idx = 0;
+			g.setStroke(new BasicStroke(2));
+			for( sig <- parent.proj.signals ) {
+				val name = sig.name;
+				val height = metrics.getStringBounds(name, g).getBounds2D().getY();
+				val off = (DataPanel.kItemHeight+DataPanel.kItemMargin)*idx;
+				g.setColor(Color.BLACK);
+				g.drawString(
+						sig.name,
+						1.5f,
+						(off+(DataPanel.kItemHeight+(height/2))).toFloat);
+				if(idx != 0){
+					g.setColor(Color.lightGray);
+					val rect = peer.getVisibleRect();
+					g.drawLine(rect.x, off, rect.x+rect.width, off);
+				}
+				idx += 1;
 			}
-			idx += 1;
 		}
-	}
+	};
+	this.peer.setView(inner.peer);
 }
-sealed class SignalPanel(val parent:DataPanel) extends Panel {
+sealed class SignalPanel(val parent:DataPanel) extends Viewport {
+	def scrollTo(x:Int, y:Int, xMax:Int, yMax:Int){
+		val pos = new Point;
+		pos.x = ((inner.size.width-this.size.width) * x)/xMax;
+		pos.y = ((inner.size.height-this.size.height) * y)/yMax;
+		peer.setViewPosition(pos);
+	}
 	def notifyDataChanged(){
 		val sigs = parent.proj.signals;
 		val width = (parent.proj.data.nanosecPerEntry*parent.proj.data.length*parent.proj.dotsPerNanoSec).toInt
 		val height = (DataPanel.kItemHeight+DataPanel.kItemMargin)*sigs.length - DataPanel.kItemMargin;
 		preferredSize = new Dimension( width, height );
-		minimumSize = preferredSize;
-		maximumSize = preferredSize;
+		minimumSize = new Dimension(0, 0);
+		maximumSize = new Dimension(width, height);
+		inner.preferredSize = preferredSize;
+		inner.minimumSize = preferredSize;
+		inner.maximumSize = preferredSize;
 		this.revalidate
 		this.repaint
 	}
-	override def paintComponent(g:Graphics2D) = {
-		super.paintComponent(g);
-		val rect = peer.getVisibleRect().clone.asInstanceOf[java.awt.Rectangle];
-		rect.x = Math.max(0, rect.x-50);
-		rect.width = Math.min(size.width, rect.width+100);
-		val lineEnd = Math.min(preferredSize.width, rect.x+rect.width);
-		val vrect = new Rectangle(0,0,preferredSize.width, DataPanel.kItemHeight);
-		val g2 = g.create().asInstanceOf[Graphics2D];
-		try {
-			var idx = 0;
-			for(sig <- parent.proj.signals){
-				renderSignal(g2, sig, vrect.intersection(rect));
-				if(parent.selectedIdx == idx){
-					g2.setColor(Color.BLACK);
-					g2.draw3DRect(0, 0, vrect.width, vrect.height, true);
+	val inner = new Panel {
+		override def paintComponent(g:Graphics2D) = {
+			super.paintComponent(g);
+			val rect = peer.getVisibleRect().clone.asInstanceOf[java.awt.Rectangle];
+			rect.x = Math.max(0, rect.x-50);
+			rect.width = Math.min(size.width, rect.width+100);
+			val lineEnd = Math.min(preferredSize.width, rect.x+rect.width);
+			val vrect = new Rectangle(0,0,preferredSize.width, DataPanel.kItemHeight);
+			val g2 = g.create().asInstanceOf[Graphics2D];
+			try {
+				var idx = 0;
+				for(sig <- parent.proj.signals){
+					renderSignal(g2, sig, vrect.intersection(rect));
+					if(parent.selectedIdx == idx){
+						g2.setColor(Color.BLACK);
+						g2.draw3DRect(0, 0, vrect.width, vrect.height, true);
+					}
+					idx+=1;
+					rect.y -= (DataPanel.kItemHeight+DataPanel.kItemMargin);
+					g2.translate(0, DataPanel.kItemHeight+DataPanel.kItemMargin);
 				}
-				idx+=1;
-				rect.y -= (DataPanel.kItemHeight+DataPanel.kItemMargin);
-				g2.translate(0, DataPanel.kItemHeight+DataPanel.kItemMargin);
+			} finally {
+				g2.dispose();
 			}
-		} finally {
-			g2.dispose();
+			//最後のライン
+			val dotsPerNsec = parent.proj.dotsPerNanoSec;
+			val nsecPerLine = (100/dotsPerNsec).ceil
+			val begin = parent.proj.data.beginTime+(rect.x/dotsPerNsec);
+			val end = Math.min(parent.proj.data.endTime, parent.proj.data.beginTime+((rect.x+rect.width)/dotsPerNsec));
+			val offset = -(dotsPerNsec * parent.proj.data.beginTime)
+			g.setColor(Color.darkGray);
+			for( l <- ( (begin/nsecPerLine).ceil.toInt to (end/nsecPerLine).floor.toInt ) ) {
+				val t = l * nsecPerLine;
+				val x = (offset + (t * dotsPerNsec)).toInt;
+				g.drawLine(x, 0, x, preferredSize.height);
+				g.drawString("%.1fnsec".format(t.toFloat), x, 10);
+			}
 		}
-		//最後のライン
-		val dotsPerNsec = parent.proj.dotsPerNanoSec;
-		val nsecPerLine = (100/dotsPerNsec).ceil
-		val begin = parent.proj.data.beginTime+(rect.x/dotsPerNsec);
-		val end = Math.min(parent.proj.data.endTime, parent.proj.data.beginTime+((rect.x+rect.width)/dotsPerNsec));
-		val offset = -(dotsPerNsec * parent.proj.data.beginTime)
-		g.setColor(Color.darkGray);
-		for( l <- ( (begin/nsecPerLine).ceil.toInt to (end/nsecPerLine).floor.toInt ) ) {
-			val t = l * nsecPerLine;
-			val x = (offset + (t * dotsPerNsec)).toInt;
-			g.drawLine(x, 0, x, preferredSize.height);
-			g.drawString("%.1fnsec".format(t.toFloat), x, 10);
-		}
-	}
+	};
 	
 	def renderSignal(g:Graphics2D, signal:Signal, rect:Rectangle):Unit = {
 		if(rect.isEmpty()){
@@ -323,6 +353,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Panel {
 			}
 		}
 	}
+	this.peer.setView(inner.peer);
 }
 sealed class LineSignalDialog(val sig:LineSignal) extends Dialog{
 	title="ラインシグナル";
