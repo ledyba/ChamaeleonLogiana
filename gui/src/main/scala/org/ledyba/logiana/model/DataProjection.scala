@@ -10,16 +10,16 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import scala.collection.GenTraversableOnce
 
-case class DataProjection(var dotsPerNanoSec:Float, private var _data:MeasuredData, private val _signals:Buffer[Signal]) extends Serializable {
+case class DataProjection(var dotsPerNanoSec:Float, private var _data:MeasuredData) extends Serializable {
 	def this()={
-		this(0.1f, new MeasuredData(), ListBuffer[Signal]());
+		this(0.1f, new MeasuredData());
 	}
 	def data:MeasuredData = this._data;
 	def data_=(v:MeasuredData) = {
 		this._data = v;
 	}
 	object signals { //TODO: BufferWrapperはどう？
-		val spirit:Buffer[Signal]=_signals;
+		val spirit:Buffer[Signal]=ListBuffer[Signal]();
 		def += (s:Signal) = {
 			this.spirit += s;
 			s.notifyDataChanged(_data);
@@ -65,7 +65,7 @@ object DataProjection {
 		d.data = MeasuredData(is);
 		val len = is.readInt();
 		for( _ <- (1 to len) ){
-			d._signals += Signal(d, is);
+			d.signals += Signal(d, is);
 		}
 		return d;
 	}

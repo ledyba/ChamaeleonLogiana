@@ -12,7 +12,7 @@ sealed abstract class Signal(val parent:DataProjection) extends Serializable {
 	def name:String;
 	protected def writeImpl(os:DataOutputStream);
 	def write(os:DataOutputStream) = Signal.write(this, os);
-	def notifyDataChanged(data:MeasuredData) = Unit
+	def notifyDataChanged(data:MeasuredData):Unit = Unit
 }
 
 object Signal {
@@ -20,6 +20,7 @@ object Signal {
 		self match {
 			case _:LineSignal => os.writeUTF("line");
 			case _:ValueSignal => os.writeUTF("value");
+			case _:SPISignal => os.writeUTF("spi");
 		}
 		self.writeImpl(os);
 	}
@@ -27,6 +28,7 @@ object Signal {
 		is.readUTF() match {
 			case "line" => { val x = new LineSignal(parent, is); return x; }
 			case "value" => { val x = new ValueSignal(parent, is); return x; }
+			case "spi" => { val x = new SPISignal(parent, is); return x; }
 		}
 	}
 }
@@ -86,5 +88,71 @@ case class ValueSignal(override val parent:DataProjection, var name:String, var 
 			os.writeInt(no);
 			os.writeBoolean(isNeg);
 		}
+	}
+}
+
+case class SPISignal(override val parent:DataProjection, var name:String, var csProbe:Int, var csAssertedByHigh:Boolean, var sclkProbe:Int, var dataProbe:Int, var isNegEdge:Boolean, var isMSBFirst:Boolean) extends Signal(parent) with Serializable {
+	def fromWaveData(wavData:MeasuredData, dataIdx:Int):(Boolean, Int) = {
+		return cache(dataIdx);
+	}
+
+	override def repr =
+		"SPISignal: "++name++" (probes sclk:"+sclkProbe+" data: "+dataProbe+" with "+(if(isNegEdge)("negEdge")else("posEdge"))+")"
+	override def toString=repr;
+
+	def this (parent:DataProjection, is:DataInputStream) = {
+		this(parent, "", 0, false, 0, 0, false, true);
+		this.name = is.readUTF;
+		this.csProbe = is.readInt;
+		this.csAssertedByHigh = is.readBoolean;
+		this.sclkProbe = is.readInt;
+		this.dataProbe = is.readInt;
+		this.isNegEdge = is.readBoolean;
+		this.isMSBFirst = is.readBoolean;
+	}
+	var cache:Array[(Boolean, Int)] = null;
+	override def notifyDataChanged(data:MeasuredData) = {
+		val c = ListBuffer.fill(data.length)(null:(Boolean, Int));
+		var nowEnabled = false;
+		var sigVal = 0;
+		var bitIdx = 0;
+		var cacheStart = 0;
+		for(i <- Range(0,data.length)) {
+			val nowCS = if(csAssertedByHigh) data.signalAt(0, csProbe) else !data.signalAt(0, csProbe);
+			if(nowCS && !nowEnabled){ //CSがAssetedされたまさにその瞬間
+				sigVal = 0;
+				bitIdx = 0;
+				cacheStart = i;
+			}
+			nowEnabled = nowCS;
+			val sclk:Boolean = //SCLKが書き換わる瞬間
+				if (i>0)
+					if(isNegEdge) data.signalAt(i-1, sclkProbe) && !data.signalAt(i, sclkProbe)
+					else !data.signalAt(i-1, sclkProbe) && data.signalAt(i, sclkProbe)
+				else false
+			if(nowCS && sclk){
+				sigVal |= (if(data.signalAt(i-1, sclkProbe)) 1 else 0) << (if(isMSBFirst)(7-bitIdx)else(bitIdx));
+				bitIdx += 1;
+				if(bitIdx >= 8){
+					c(cacheStart) = (true, sigVal);
+					for(x <- Range(cacheStart+1, i)) {
+						c(x) = (false, sigVal);
+					}
+					sigVal = 0;
+					bitIdx = 0;
+					cacheStart = i;
+				}
+			}
+		}
+		cache = c.toArray;
+	}
+	override def writeImpl(os:DataOutputStream) = {
+		os.writeUTF(name);
+		os.writeInt(csProbe);
+		os.writeBoolean(csAssertedByHigh);
+		os.writeInt(sclkProbe);
+		os.writeInt(dataProbe);
+		os.writeBoolean(isNegEdge);
+		os.writeBoolean(isMSBFirst);
 	}
 }

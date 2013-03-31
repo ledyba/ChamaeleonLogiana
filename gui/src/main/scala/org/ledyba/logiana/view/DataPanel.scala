@@ -36,6 +36,8 @@ import java.awt.event.AdjustmentListener
 import java.awt.event.AdjustmentEvent
 import java.awt.event.ComponentListener
 import java.awt.event.ComponentEvent
+import org.ledyba.logiana.model.SPISignal
+import org.ledyba.logiana.model.SPISignal
 
 object DataPanel {
 	val kItemHeight = 30;
@@ -147,6 +149,7 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		x match {
 				case i:LineSignal => (new LineSignalDialog(i)).open({sig=>updateSignal(sig)})
 				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>updateSignal(sig)})
+				case i:SPISignal => (new SPISignalDialog(i)).open({sig=>updateSignal(sig)})
 		}};
 	popupMenu.contents += new MenuItem(Action("edit"){
 		if(selectedIdx >= 0){
@@ -171,6 +174,11 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		val sig = ValueSignal(proj, "new", (0 to 7).toArray.map(i=>(i,false)));
 		addSignal(sig);
 		new ValueSignalDialog(sig).open({sig=>updateSignal(sig)});
+	});
+	popupMenu.contents += new MenuItem(Action("add new SPI signal"){
+		val sig = SPISignal(proj, "new", 1, false, 0, 2, true, true);
+		addSignal(sig);
+		new SPISignalDialog(sig).open({sig=>updateSignal(sig)});
 	});
 	popupMenu.contents += new MenuItem(Action("clear"){
 		clearSignals;
@@ -391,6 +399,34 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 					lastX=x;
 				}
 			}
+			case ssig:SPISignal => {
+				g.setStroke(new BasicStroke(3));
+				var startX = 0;
+				var started = false;
+				for( i <- Range(startIdx, endIdx) ) {
+					val sig = ssig.fromWaveData(signal.parent.data, i);
+					val x = ((i+1)*nanosecPerEntry*dotsPerNanoSec).intValue;
+					if(sig != null) {
+						val (first, v) = sig;
+						if(!started){
+							startX = x;
+						}
+						started = true;
+						if(first) {
+							g.setColor(Color.BLACK);
+							g.setFont(font);
+							g.drawString("%02x".format(sig), x+3f,  20f);
+						}
+					}else{
+						if(started){
+							g.setColor(Color.RED);
+							g.drawLine(startX, 5, x, 5);
+							g.drawLine(startX, DataPanel.kItemHeight-5, x, DataPanel.kItemHeight-5);
+						}
+						started = false;
+					}
+				}
+			}
 		}
 	}
 	this.peer.setView(inner.peer);
@@ -466,6 +502,66 @@ sealed class ValueSignalDialog(val sig:ValueSignal) extends Dialog{
 		super.open();
 	}
 	def open(lamb:ValueSignal=>Unit) = {
+		this.onEnd = lamb;
+		this.peer.setLocationByPlatform(true);
+		super.open();
+	}
+}
+
+sealed class SPISignalDialog(val sig:SPISignal) extends Dialog{
+	title="SPIシグナル";
+	modal=true;
+	
+	val nameField=new TextField(sig.name);
+	val csField=new ComboBox(0 to 31){selection.index=sig.csProbe;};
+	val csAssrtedByHighField = new ComboBox(Array(true, false)){selection.item=sig.csAssertedByHigh};
+	val sclkField = new ComboBox(0 to 31){selection.item=sig.sclkProbe};
+	val dataField = new ComboBox(0 to 31){selection.item=sig.dataProbe};
+	val isNegEdgeField = new ComboBox(Array(true, false)){selection.item=sig.isNegEdge};
+	val isMSBFirstField = new ComboBox(Array(true, false)){selection.item=sig.isMSBFirst};
+	contents = new GridBagPanel(){
+		add(new Label("名前："), new Constraints(){gridx=0;gridy=0;});
+		add(nameField, new Constraints(){gridx=1;gridy=0;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("CSピン："), new Constraints(){gridx=0;gridy=1;});
+		add(csField, new Constraints(){gridx=1;gridy=1;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("CSはHighでアサート："), new Constraints(){gridx=0;gridy=2;});
+		add(csAssrtedByHighField, new Constraints(){gridx=1;gridy=2;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("SCLKピン："), new Constraints(){gridx=0;gridy=3;});
+		add(sclkField, new Constraints(){gridx=1;gridy=3;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("DATAピン："), new Constraints(){gridx=0;gridy=4;});
+		add(dataField, new Constraints(){gridx=1;gridy=4;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("NegEdgeで信号キャッチ："), new Constraints(){gridx=0;gridy=5;});
+		add(isNegEdgeField, new Constraints(){gridx=1;gridy=5;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+
+		add(new Label("MSBが最初："), new Constraints(){gridx=0;gridy=6;});
+		add(isMSBFirstField, new Constraints(){gridx=1;gridy=6;weightx=1;fill=GridBagPanel.Fill.Horizontal;})
+	}
+	var onEnd:SPISignal=>Unit = null;
+	override def closeOperation() {
+		sig.name = nameField.text;
+		sig.csProbe = csField.selection.item;
+		sig.csAssertedByHigh = csAssrtedByHighField.selection.item;
+		sig.sclkProbe = sclkField.selection.item;
+		sig.dataProbe = dataField.selection.item;
+		sig.isNegEdge = isNegEdgeField.selection.item;
+		sig.isMSBFirst = isMSBFirstField.selection.item;
+		if(this.onEnd != null){
+			onEnd(sig)
+		}
+		super.closeOperation();
+	}
+	minimumSize = new Dimension(256,0);
+	preferredSize = new Dimension(256 ,0);
+	override def open(){
+		this.peer.setLocationByPlatform(true);
+		super.open();
+	}
+	def open(lamb:SPISignal=>Unit) = {
 		this.onEnd = lamb;
 		this.peer.setLocationByPlatform(true);
 		super.open();
