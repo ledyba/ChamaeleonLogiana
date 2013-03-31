@@ -291,7 +291,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 	def notifyDataChanged(){
 		val sigs = parent.proj.signals;
 		val width = (parent.proj.data.nanosecPerEntry*parent.proj.data.length*parent.proj.dotsPerNanoSec).toInt
-		val height = (DataPanel.kItemHeight+DataPanel.kItemMargin)*sigs.length - DataPanel.kItemMargin;
+		val height = Math.max(0, (DataPanel.kItemHeight+DataPanel.kItemMargin)*sigs.length - DataPanel.kItemMargin);
 		preferredSize = new Dimension( width, height );
 		minimumSize = new Dimension(0, 0);
 		maximumSize = new Dimension(width, height);
