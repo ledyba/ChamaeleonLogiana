@@ -415,7 +415,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 						if(first) {
 							g.setColor(Color.BLACK);
 							g.setFont(font);
-							g.drawString("%02x".format(sig), x+3f,  20f);
+							g.drawString("%02x".format(v), x+3,  20f);
 						}
 					}else{
 						if(started){

@@ -118,7 +118,7 @@ case class SPISignal(override val parent:DataProjection, var name:String, var cs
 		var bitIdx = 0;
 		var cacheStart = 0;
 		for(i <- Range(0,data.length)) {
-			val nowCS = if(csAssertedByHigh) data.signalAt(0, csProbe) else !data.signalAt(0, csProbe);
+			val nowCS = if(csAssertedByHigh) data.signalAt(i, csProbe) else !data.signalAt(i, csProbe);
 			if(nowCS && !nowEnabled){ //CSがAssetedされたまさにその瞬間
 				sigVal = 0;
 				bitIdx = 0;
@@ -131,11 +131,11 @@ case class SPISignal(override val parent:DataProjection, var name:String, var cs
 					else !data.signalAt(i-1, sclkProbe) && data.signalAt(i, sclkProbe)
 				else false
 			if(nowCS && sclk){
-				sigVal |= (if(data.signalAt(i-1, sclkProbe)) 1 else 0) << (if(isMSBFirst)(7-bitIdx)else(bitIdx));
+				sigVal |= (if(data.signalAt(i-1, dataProbe)) 1 else 0) << (if(isMSBFirst)(7-bitIdx)else(bitIdx));
 				bitIdx += 1;
 				if(bitIdx >= 8){
 					c(cacheStart) = (true, sigVal);
-					for(x <- Range(cacheStart+1, i)) {
+					for(x <- ((cacheStart+1) to i)) {
 						c(x) = (false, sigVal);
 					}
 					sigVal = 0;
