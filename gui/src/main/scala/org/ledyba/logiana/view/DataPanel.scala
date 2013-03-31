@@ -152,12 +152,12 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 				case i:ValueSignal => (new ValueSignalDialog(i)).open({sig=>updateSignal(sig)})
 				case i:SPISignal => (new SPISignalDialog(i)).open({sig=>updateSignal(sig)})
 		}};
-	popupMenu.contents += new MenuItem(Action("edit"){
+	popupMenu.contents += new MenuItem(Action("信号を編集"){
 		if(selectedIdx >= 0){
 			edit(proj.signals(selectedIdx));
 		}
 	});
-	popupMenu.contents += new MenuItem("delete"){
+	popupMenu.contents += new MenuItem("この信号を削除"){
 		reactions += {
 			case ButtonClicked(source) => {
 				if(selectedIdx >= 0){
@@ -166,22 +166,22 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 			}
 		}
 	};
-	popupMenu.contents += new MenuItem(Action("add new line signal"){
-		val sig = LineSignal(proj, "new", 0);
+	popupMenu.contents += new MenuItem(Action("新しい信号線を追加"){
+		val sig = LineSignal(proj, "信号線", 0);
 		addSignal(sig);
 		new LineSignalDialog(sig).open({sig=>updateSignal(sig)});
 	});
-	popupMenu.contents += new MenuItem(Action("add new value signal"){
-		val sig = ValueSignal(proj, "new", (0 to 7).toArray.map(i=>(i,false)));
+	popupMenu.contents += new MenuItem(Action("新しいデータバスを追加"){
+		val sig = ValueSignal(proj, "データバス", (0 to 7).toArray.map(i=>(i,false)));
 		addSignal(sig);
 		new ValueSignalDialog(sig).open({sig=>updateSignal(sig)});
 	});
-	popupMenu.contents += new MenuItem(Action("add new SPI signal"){
-		val sig = SPISignal(proj, "new", 1, false, 0, 2, true, true);
+	popupMenu.contents += new MenuItem(Action("新しいSPI信号を追加"){
+		val sig = SPISignal(proj, "SPI", 1, false, 0, 2, true, true);
 		addSignal(sig);
 		new SPISignalDialog(sig).open({sig=>updateSignal(sig)});
 	});
-	popupMenu.contents += new MenuItem(Action("clear"){
+	popupMenu.contents += new MenuItem(Action("信号を全て削除"){
 		clearSignals;
 		DataPanel.this.revalidate;
 	});
