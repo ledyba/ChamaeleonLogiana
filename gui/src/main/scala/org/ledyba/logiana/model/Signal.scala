@@ -32,8 +32,8 @@ object Signal {
 }
 
 case class LineSignal(override val parent:DataProjection, var name:String, var probeNo:Int) extends Signal(parent) with Serializable {
-	def fromWaveData(wavData:MeasuredData, time:Double):Boolean = {
-		return wavData.signalAtTime(time, probeNo);
+	def fromWaveData(wavData:MeasuredData, idx:Int):Boolean = {
+		return wavData.signalAt(idx, probeNo);
 	}
 	override def repr() = "LineSignal: "++name++" (probe"+probeNo+")"
 	override def toString=repr;
@@ -50,15 +50,15 @@ case class LineSignal(override val parent:DataProjection, var name:String, var p
 }
 
 case class ValueSignal(override val parent:DataProjection, var name:String, var lines:Array[(Int, Boolean)]) extends Signal(parent) with Serializable {
-	def fromWaveData(wavData:MeasuredData, time:Double):Int = {
+	def fromWaveData(wavData:MeasuredData, dataIdx:Int):Int = {
 		var idx=(-1);
 		return lines.foldLeft(0)( (sig:Int, sigData) => {
 			val (probeNo,isNegative) = sigData
 			idx+=1;
 			if (isNegative) {
-				(sig | ((if(wavData.signalAtTime(time, probeNo)) 0 else 1) << idx))
+				(sig | ((if(wavData.signalAt(dataIdx, probeNo)) 0 else 1) << idx))
 			} else {
-				(sig | ((if(wavData.signalAtTime(time, probeNo)) 1 else 0) << idx))
+				(sig | ((if(wavData.signalAt(dataIdx, probeNo)) 1 else 0) << idx))
 			}
 		});
 	}

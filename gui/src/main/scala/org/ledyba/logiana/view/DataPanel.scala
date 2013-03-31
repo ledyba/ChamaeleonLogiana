@@ -353,7 +353,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 				var lastX:Int=0;
 				var lastSig=false;
 				for( i <- Range(startIdx, endIdx) ) {
-					val sig = lsig.fromWaveData(signal.parent.data, (i*nanosecPerEntry)+beginTime);
+					val sig = lsig.fromWaveData(signal.parent.data, i);
 					val x = ((i+1)*nanosecPerEntry*dotsPerNanoSec).intValue;
 					val y = if(sig) 5 else DataPanel.kItemHeight-5;
 					if(lastSig != sig) {
@@ -373,7 +373,7 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 				var lastSig:Int = 0;
 				var lastChangedX = 0;
 				for( i <- Range(startIdx, endIdx) ) {
-					val sig = vsig.fromWaveData(signal.parent.data, (i*nanosecPerEntry)+beginTime);
+					val sig = vsig.fromWaveData(signal.parent.data, i);
 					val x = ((i+1)*nanosecPerEntry*dotsPerNanoSec).intValue;
 					if(first || lastSig != sig){
 						g.setColor(Color.BLACK);
