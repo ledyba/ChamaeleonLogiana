@@ -33,12 +33,9 @@ case class DataProjection(var dotsPerNanoSec:Float, private var _data:MeasuredDa
 		def foldLeft[B](z: B)(op: (B, Signal) => B):B = spirit.foldLeft(z)(op)
 		def clear = spirit.clear;
 		def foreach(f: (Signal) => Unit): Unit = spirit.foreach(f);
-		
-		def dataUpdated = {
-			for(s <- spirit) {
-				s.notifyDataChanged(_data);
-			}
-		}
+	}
+	def signalUpdated(sig:Signal) = {
+		sig.notifyDataChanged(_data);
 	}
 	final def write(fname:String):Unit = {
 		val st = new DataOutputStream(new FileOutputStream(fname));

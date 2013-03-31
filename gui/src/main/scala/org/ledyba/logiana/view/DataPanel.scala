@@ -138,6 +138,7 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		revalidate();
 	}
 	def updateSignal(sig:Signal) = {
+		proj.signalUpdated(sig);
 		sigPanel.notifyDataChanged();
 		labelPanel.notifyDataChanged();
 		revalidate();
