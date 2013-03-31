@@ -89,12 +89,6 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 		proj.data = data;
 		labelPanel.notifyDataChanged();
 	}
-	def updateSignal(sigs : Buffer[Signal]) = {
-		proj.signals = sigs;
-		sigPanel.notifyDataChanged();
-		labelPanel.notifyDataChanged();
-		revalidate();
-	}
 	def swapSignal(a:Int, b:Int) = {
 		val origSig = proj.signals.clone;
 		proj.signals.clear;
@@ -185,6 +179,7 @@ class DataPanel(filename:String, private val scrollX:ScrollBar, private val scro
 	this.listenTo(this.mouse.clicks);
 	this.listenTo(this.mouse.moves);
 	this.listenTo(this.mouse.wheel);
+	this.contents
 	this.reactions += {
 		case MouseClicked(source, point, modifiers, clicks, triggersPopup) => {
 			val lastSelected = (point.y/(DataPanel.kItemHeight+DataPanel.kItemMargin)).intValue();

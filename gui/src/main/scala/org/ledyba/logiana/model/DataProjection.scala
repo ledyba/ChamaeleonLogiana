@@ -8,13 +8,36 @@ import scala.collection.mutable.Buffer
 import scala.collection.mutable.ListBuffer
 import java.io.DataInputStream
 import java.io.DataOutputStream
+import scala.collection.GenTraversableOnce
 
-case class DataProjection(var dotsPerNanoSec:Float, var data:MeasuredData, var signals:Buffer[Signal]) extends Serializable {
+case class DataProjection(var dotsPerNanoSec:Float, private var _data:MeasuredData, private val _signals:Buffer[Signal]) extends Serializable {
 	def this()={
 		this(0.1f, new MeasuredData(), ListBuffer[Signal]());
-		// default signals
-		for( i<-Range(0,32)) yield {
-			signals += new LineSignal(DataProjection.this, "Probe: %02d".format(i), i);
+	}
+	def data:MeasuredData = this._data;
+	def data_=(v:MeasuredData) = {
+		this._data = v;
+	}
+	object signals { //TODO: BufferWrapperはどう？
+		val spirit:Buffer[Signal]=_signals;
+		def += (s:Signal) = {
+			this.spirit += s;
+			s.notifyDataChanged(_data);
+		}
+		def -= (s:Signal) = {
+			this.spirit -= s;
+		}
+		def length = spirit.length;
+		def apply(i:Int) = spirit(i);
+		override def clone:Buffer[Signal] = spirit.clone.asInstanceOf[Buffer[Signal]]
+		def foldLeft[B](z: B)(op: (B, Signal) => B):B = spirit.foldLeft(z)(op)
+		def clear = spirit.clear;
+		def foreach(f: (Signal) => Unit): Unit = spirit.foreach(f);
+		
+		def dataUpdated = {
+			for(s <- spirit) {
+				s.notifyDataChanged(_data);
+			}
 		}
 	}
 	final def write(fname:String):Unit = {
@@ -40,10 +63,9 @@ object DataProjection {
 		val d = new DataProjection();
 		d.dotsPerNanoSec = is.readFloat();
 		d.data = MeasuredData(is);
-		d.signals = ListBuffer[Signal]();
 		val len = is.readInt();
 		for( _ <- (1 to len) ){
-			d.signals += Signal(d, is);
+			d._signals += Signal(d, is);
 		}
 		return d;
 	}
@@ -57,7 +79,11 @@ object DataProjection {
 				fis.close();
 			}
 		}else{
-			return new DataProjection();
+			val d = new DataProjection();
+			for( i<-Range(0,32)) {
+				d.signals += new LineSignal(d, "Probe: %02d".format(i), i);
+			}
+			return d;
 		}
 	}
 }

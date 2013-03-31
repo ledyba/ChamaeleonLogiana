@@ -12,6 +12,7 @@ sealed abstract class Signal(val parent:DataProjection) extends Serializable {
 	def name:String;
 	protected def writeImpl(os:DataOutputStream);
 	def write(os:DataOutputStream) = Signal.write(this, os);
+	def notifyDataChanged(data:MeasuredData) = Unit
 }
 
 object Signal {
