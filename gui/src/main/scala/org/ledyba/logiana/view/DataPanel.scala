@@ -410,6 +410,11 @@ sealed class SignalPanel(val parent:DataPanel) extends Viewport {
 						val (first, v) = sig;
 						if(!started){
 							startX = x;
+						}else{ //TODO: 順々に描画しないとスクロールでうまく描画されない…
+							g.setColor(Color.RED);
+							g.drawLine(startX, 5, x, 5);
+							g.drawLine(startX, DataPanel.kItemHeight-5, x, DataPanel.kItemHeight-5);
+							startX = x;
 						}
 						started = true;
 						if(first) {
